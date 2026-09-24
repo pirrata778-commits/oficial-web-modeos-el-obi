@@ -17,7 +17,7 @@
 - Bot real conectado mediante `discord.js`.
 - Logs del bot por Server-Sent Events en `/api/discord/logs`.
 - Comandos DEV limitados en `/api/discord/commands`.
-- Auditoría DEV en SQLite mediante `/api/dev/security-logs`.
+- Auditoría DEV en PostgreSQL mediante `/api/dev/security-logs`.
 - Bloqueo de contraseña DEV tras cinco intentos fallidos.
 
 No pongas tokens ni secretos dentro de `index.html`. Usa únicamente `.env`.
@@ -30,7 +30,7 @@ No pongas tokens ni secretos dentro de `index.html`. Usa únicamente `.env`.
 4. En `index.html`, sustituye `https://TU-SERVICIO.onrender.com` por la URL real de tu backend Render.
 5. En Discord Developer Portal añade como redirect URI:
    `https://modeos-el-obi.onrender.com/auth/discord/callback`
-6. Completa en Render `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN` y `DEV_PASSWORD` como variables secretas.
-7. El servicio usa el puerto asignado por Render automáticamente.
+6. Completa en Render `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DEV_PASSWORD` y `DATABASE_URL` como variables secretas.
+7. El servicio usa el puerto asignado por Render automáticamente. PostgreSQL se conecta mediante `DATABASE_URL`; no se necesita disco persistente para la base de datos.
 
-El archivo `render.yaml` configura un disco persistente para SQLite. Sin disco persistente, los logs y la base de datos se perderán al reiniciar o desplegar el servicio.
+La aplicación usa PostgreSQL en Neon para conservar los logs y los intentos de acceso al reiniciar o desplegar el servicio.

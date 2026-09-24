@@ -23,9 +23,5 @@ services:
         sync: false
       - key: DEV_PASSWORD
         sync: false
-      - key: DATABASE_PATH
-        value: /opt/render/project/src/data/modeos.sqlite
-    disk:
-      name: modeos-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
+      - key: DATABASE_URL
+        sync: false

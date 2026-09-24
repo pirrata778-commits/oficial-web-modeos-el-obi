@@ -1,11 +1,10 @@
 import crypto from 'node:crypto';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import session from 'express-session';
-import Database from 'better-sqlite3';
 import dotenv from 'dotenv';
+import pg from 'pg';
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 
 dotenv.config();
@@ -14,22 +13,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 const publicUrl = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
 const frontendUrl = process.env.FRONTEND_URL || publicUrl;
-const databasePath = path.resolve(__dirname, process.env.DATABASE_PATH || './data/modeos.sqlite');
-const databaseDirectory = path.dirname(databasePath);
+const { Pool } = pg;
 
-if (!process.env.SESSION_SECRET || !process.env.DEV_PASSWORD) {
-  throw new Error('Faltan SESSION_SECRET o DEV_PASSWORD en .env');
+if (!process.env.SESSION_SECRET || !process.env.DEV_PASSWORD || !process.env.DATABASE_URL) {
+  throw new Error('Faltan SESSION_SECRET, DEV_PASSWORD o DATABASE_URL en .env');
 }
 if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || !process.env.DISCORD_BOT_TOKEN) {
   console.warn('[CONFIG] OAuth o bot de Discord todavía no están configurados.');
 }
 
-fs.mkdirSync(databaseDirectory, { recursive: true });
-const database = new Database(databasePath);
-database.pragma('journal_mode = WAL');
-database.exec(`
+const database = new Pool({ connectionString: process.env.DATABASE_URL });
+await database.query(`
   CREATE TABLE IF NOT EXISTS security_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id BIGSERIAL PRIMARY KEY,
     type TEXT NOT NULL,
     ip TEXT,
     details TEXT NOT NULL,
@@ -38,7 +34,7 @@ database.exec(`
   CREATE TABLE IF NOT EXISTS dev_attempts (
     session_id TEXT PRIMARY KEY,
     failed_attempts INTEGER NOT NULL DEFAULT 0,
-    locked INTEGER NOT NULL DEFAULT 0,
+    locked BOOLEAN NOT NULL DEFAULT FALSE,
     updated_at TEXT NOT NULL
   );
 `);
@@ -58,23 +54,16 @@ app.use((request, response, next) => {
   if (request.method === 'OPTIONS') return response.sendStatus(204);
   next();
 });
-const devAttempts = database.prepare(`
-  INSERT INTO dev_attempts (session_id, failed_attempts, locked, updated_at)
-  VALUES (?, ?, ?, ?)
-  ON CONFLICT(session_id) DO UPDATE SET
-    failed_attempts = excluded.failed_attempts,
-    locked = excluded.locked,
-    updated_at = excluded.updated_at
-`);
-const insertSecurityLog = database.prepare('INSERT INTO security_logs (type, ip, details, created_at) VALUES (?, ?, ?, ?)');
-
 function now() {
   return new Date().toISOString();
 }
 
-function logSecurity(type, request, details = {}) {
+async function logSecurity(type, request, details = {}) {
   const event = { type, details, timestamp: now() };
-  insertSecurityLog.run(type, request.ip, JSON.stringify(details), event.timestamp);
+  await database.query(
+    'INSERT INTO security_logs (type, ip, details, created_at) VALUES ($1, $2, $3, $4)',
+    [type, request.ip, JSON.stringify(details), event.timestamp]
+  );
   const payload = `event: security\\ndata: ${JSON.stringify(event)}\\n\\n`;
   for (const response of devLogClients) response.write(payload);
   return event;
@@ -148,30 +137,38 @@ app.get('/api/discord/guilds', requireDiscordUser, (request, response) => {
 });
 app.get('/api/config', (_request, response) => response.json({ discordClientId: process.env.DISCORD_CLIENT_ID || null }));
 
-app.post('/api/dev/login', (request, response) => {
+app.post('/api/dev/login', async (request, response) => {
   const { password } = request.body || {};
-  const existing = database.prepare('SELECT * FROM dev_attempts WHERE session_id = ?').get(request.sessionID);
+  const { rows } = await database.query('SELECT * FROM dev_attempts WHERE session_id = $1', [request.sessionID]);
+  const existing = rows[0];
   if (existing?.locked) return response.status(423).json({ error: 'Acceso DEV bloqueado.', locked: true });
   if (password !== process.env.DEV_PASSWORD) {
     const failedAttempts = (existing?.failed_attempts || 0) + 1;
-    const locked = failedAttempts >= 5 ? 1 : 0;
-    devAttempts.run(request.sessionID, failedAttempts, locked, now());
-    logSecurity(locked ? 'access_locked' : 'login_failed', request, { attempts: failedAttempts });
+    const locked = failedAttempts >= 5;
+    await database.query(`
+      INSERT INTO dev_attempts (session_id, failed_attempts, locked, updated_at)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT(session_id) DO UPDATE SET
+        failed_attempts = EXCLUDED.failed_attempts,
+        locked = EXCLUDED.locked,
+        updated_at = EXCLUDED.updated_at
+    `, [request.sessionID, failedAttempts, locked, now()]);
+    await logSecurity(locked ? 'access_locked' : 'login_failed', request, { attempts: failedAttempts });
     return response.status(401).json({ error: locked ? 'Máximo de intentos alcanzado.' : 'Contraseña incorrecta.', attemptsRemaining: Math.max(0, 5 - failedAttempts), locked: Boolean(locked) });
   }
   request.session.devAuthenticated = true;
-  logSecurity('login_success', request);
+  await logSecurity('login_success', request);
   response.json({ ok: true });
 });
 
-app.post('/api/dev/logout', requireDev, (request, response) => {
+app.post('/api/dev/logout', requireDev, async (request, response) => {
   request.session.devAuthenticated = false;
-  logSecurity('logout', request);
+  await logSecurity('logout', request);
   response.json({ ok: true });
 });
 
-app.post('/api/dev/security-logs', requireDev, (request, response) => {
-  logSecurity(request.body?.type || 'client_event', request, request.body?.details || {});
+app.post('/api/dev/security-logs', requireDev, async (request, response) => {
+  await logSecurity(request.body?.type || 'client_event', request, request.body?.details || {});
   response.status(201).json({ ok: true });
 });
 
