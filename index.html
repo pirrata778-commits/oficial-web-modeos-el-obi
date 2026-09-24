@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MODEOS EL OBI | Cyberpunk Platform Pro Ultimate Secure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #030308;
+            color: #e2e8f0;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        .glass-panel {
+            background: rgba(10, 10, 22, 0.85);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 255, 204, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s ease;
+        }
+        .glass-panel:hover {
+            border-color: rgba(0, 255, 204, 0.35);
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.15);
+        }
+
+        .glow-text {
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+        }
+
+        .cyber-grid {
+            background-image: linear-gradient(to right, rgba(0,255,204,0.04) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(157,0,255,0.04) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        @keyframes neonPulse {
+            0% { box-shadow: 0 0 5px rgba(157,0,255,0.4), inset 0 0 5px rgba(157,0,255,0.2); }
+            50% { box-shadow: 0 0 20px rgba(0,255,204,0.7), inset 0 0 10px rgba(0,255,204,0.4); }
+            100% { box-shadow: 0 0 5px rgba(157,0,255,0.4), inset 0 0 5px rgba(157,0,255,0.2); }
+        }
+
+        .active-nav-glow {
+            animation: neonPulse 3s infinite ease-in-out;
+            background: linear-gradient(135deg, rgba(157,0,255,0.25), rgba(0,255,204,0.25)) !important;
+            border-color: #00ffcc !important;
+            color: #ffffff !important;
+        }
+
+        @keyframes cyberBorderMove {
+            0% { border-color: rgba(0, 255, 204, 0.3); box-shadow: 0 4px 20px rgba(0, 255, 204, 0.15); }
+            33% { border-color: rgba(157, 0, 255, 0.5); box-shadow: 0 4px 25px rgba(157, 0, 255, 0.25); }
+            66% { border-color: rgba(255, 0, 127, 0.5); box-shadow: 0 4px 25px rgba(255, 0, 127, 0.25); }
+            100% { border-color: rgba(0, 255, 204, 0.3); box-shadow: 0 4px 20px rgba(0, 255, 204, 0.15); }
+        }
+
+        .moving-cyber-nav {
+            animation: cyberBorderMove 5s infinite linear;
+        }
+
+        @keyframes cyberFadeIn {
+            0% { opacity: 0; transform: translateY(8px) scale(0.99); filter: brightness(1.5); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+        }
+
+        .tab-animate {
+            animation: cyberFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .dev-logo-mark {
+            width: 1.65rem;
+            height: 1.65rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0, 255, 204, 0.65);
+            border-radius: 0.55rem;
+            background: linear-gradient(135deg, rgba(157, 0, 255, 0.45), rgba(0, 255, 204, 0.18));
+            color: #00ffcc;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 900;
+            line-height: 1;
+            text-shadow: 0 0 8px rgba(0, 255, 204, 0.9);
+            box-shadow: 0 0 12px rgba(157, 0, 255, 0.35), inset 0 0 8px rgba(0, 255, 204, 0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #dev-trigger-btn:hover .dev-logo-mark {
+            transform: rotate(-8deg) scale(1.1);
+            box-shadow: 0 0 18px rgba(0, 255, 204, 0.7), inset 0 0 10px rgba(157, 0, 255, 0.35);
+        }
+
+        .dev-logo-mark.authenticated {
+            border-color: #00ffcc;
+            color: #ffffff;
+            background: linear-gradient(135deg, rgba(0, 255, 204, 0.5), rgba(16, 185, 129, 0.35));
+            box-shadow: 0 0 18px rgba(0, 255, 204, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .tech-stack-strip {
+            display: none;
+            align-items: center;
+            gap: 0.35rem;
+            margin-left: 0.75rem;
+        }
+
+        .tech-logo {
+            min-width: 2.15rem;
+            height: 1.65rem;
+            padding: 0 0.4rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            border: 1px solid currentColor;
+            border-radius: 0.5rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.55rem;
+            font-weight: 900;
+            letter-spacing: 0.03em;
+            box-shadow: 0 0 9px currentColor;
+            transition: transform 0.25s ease, filter 0.25s ease;
+        }
+
+        .tech-logo i {
+            font-size: 0.8rem;
+        }
+
+        .tech-logo b {
+            font-size: 0.48rem;
+        }
+
+        .tech-logo:hover {
+            transform: translateY(-3px) rotate(-3deg) scale(1.08);
+            filter: brightness(1.35);
+        }
+
+        .tech-js { color: #f7df1e; background: rgba(247, 223, 30, 0.12); }
+        .tech-py { color: #4cc9f0; background: rgba(55, 118, 171, 0.2); }
+        .tech-ts { color: #5aa9ff; background: rgba(49, 120, 198, 0.18); }
+        .tech-txt { color: #d8dee9; background: rgba(216, 222, 233, 0.1); }
+        .tech-http { color: #ff9f43; background: rgba(255, 159, 67, 0.12); }
+        .tech-https { color: #00ffcc; background: rgba(0, 255, 204, 0.12); }
+
+        @media (min-width: 768px) {
+            .tech-stack-strip { display: flex; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col cyber-grid relative selection:bg-[#00ffcc] selection:text-black">
+
+    <!-- AVISO DE WEB SEGURO HTTPS -->
+    <div id="beta-banner" class="w-full bg-gradient-to-r from-[#9d00ff]/30 via-[#5865F2]/30 to-[#00ffcc]/30 border-b border-[#00ffcc]/30 px-3 py-2 text-center text-[10px] sm:text-xs font-orbitron font-bold text-white flex items-center justify-between z-50 backdrop-blur-md">
+        <div class="flex items-center justify-center space-x-1.5 flex-grow truncate px-1">
+            <i class="fa-solid fa-shield-halved text-[#00ffcc] animate-pulse shrink-0"></i>
+            <span class="truncate">© 2026 MODEOS EL OBI. Todos los derechos reservados. <span class="text-[#00ffcc]">HTTPS Cifrado Activo en Render</span>.</span>
+        </div>
+        <button onclick="closeBetaBanner()" class="text-gray-400 hover:text-white px-2 py-0.5 text-sm shrink-0 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Navegación Superior -->
+    <nav class="w-full bg-[#05050b]/95 backdrop-blur-2xl border-b moving-cyber-nav px-3 sm:px-6 py-3 flex items-center justify-between z-40">
+        <div class="flex items-center space-x-2 cursor-pointer group" onclick="switchTab('lobby')">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#9d00ff] to-[#00ffcc] p-0.5 shadow-[0_0_20px_rgba(0,255,204,0.4)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <div class="w-full h-full bg-[#05050b] rounded-[10px] flex items-center justify-center">
+                    <i class="fa-solid fa-cube text-[#00ffcc] text-xs sm:text-sm animate-pulse"></i>
+                </div>
+            </div>
+            <div>
+                <span class="font-orbitron font-black text-white text-xs sm:text-base tracking-wider block leading-tight">MODEOS <span class="text-[#00ffcc] glow-text">EL OBI</span></span>
+                <span class="text-[8px] sm:text-[9px] text-purple-400 font-orbitron font-bold uppercase tracking-widest block leading-tight">© 2026 Todos los derechos reservados</span>
+            </div>
+            <div class="tech-stack-strip" aria-label="Tecnologías compatibles">
+                <span class="tech-logo tech-js" title="JavaScript"><i class="fa-brands fa-js"></i><b>.JS</b></span>
+                <span class="tech-logo tech-py" title="Python"><i class="fa-brands fa-python"></i><b>.PY</b></span>
+                <span class="tech-logo tech-ts" title="TypeScript"><i class="fa-solid fa-code"></i><b>.TS</b></span>
+                <span class="tech-logo tech-txt" title="Texto plano"><i class="fa-solid fa-file-lines"></i><b>.TXT</b></span>
+                <span class="tech-logo tech-http" title="HTTP"><i class="fa-solid fa-globe"></i><b>.HTTP</b></span>
+                <span class="tech-logo tech-https" title="HTTPS seguro"><i class="fa-solid fa-shield-halved"></i><b>.HTTPS</b></span>
+            </div>
+        </div>
+
+        <div class="hidden md:flex items-center space-x-1 bg-[#0a0a16]/90 border border-white/10 rounded-full p-1.5 shadow-inner backdrop-blur-xl">
+            <button onclick="switchTab('lobby')" class="nav-btn px-3 py-2 rounded-full text-xs font-orbitron font-bold transition-all flex items-center space-x-1.5 cursor-pointer text-gray-400 hover:text-white border border-transparent" data-target="lobby">
+                <i class="fa-solid fa-network-wired text-sm"></i><span>Lobby</span>
+            </button>
+            <button onclick="switchTab('modeos')" class="nav-btn px-3 py-2 rounded-full text-xs font-orbitron font-bold transition-all flex items-center space-x-1.5 cursor-pointer text-gray-400 hover:text-white border border-transparent" data-target="modeos">
+                <i class="fa-solid fa-code text-sm"></i><span>Modeos</span>
+            </button>
+            <button onclick="switchTab('directos')" class="nav-btn px-3 py-2 rounded-full text-xs font-orbitron font-bold transition-all flex items-center space-x-1.5 cursor-pointer text-gray-400 hover:text-white border border-transparent" data-target="directos">
+                <i class="fa-solid fa-tower-broadcast text-sm"></i><span>Directos</span>
+            </button>
+            <button onclick="switchTab('dashboard')" class="nav-btn px-3 py-2 rounded-full text-xs font-orbitron font-bold transition-all flex items-center space-x-1.5 cursor-pointer text-gray-400 hover:text-white border border-transparent" data-target="dashboard">
+                <i class="fa-solid fa-robot text-sm"></i><span>Bots</span>
+            </button>
+            <button onclick="switchTab('soporte')" class="nav-btn px-3 py-2 rounded-full text-xs font-orbitron font-bold transition-all flex items-center space-x-1.5 cursor-pointer text-gray-400 hover:text-white border border-transparent" data-target="soporte">
+                <i class="fa-solid fa-headset text-sm"></i><span>Soporte</span>
+            </button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button id="dev-trigger-btn" onclick="openDevModal()" class="px-2.5 sm:px-3 py-2 bg-[#9d00ff]/20 hover:bg-[#9d00ff]/35 border border-[#9d00ff]/50 text-[#00ffcc] text-xs font-bold rounded-xl transition flex items-center space-x-1.5 cursor-pointer shadow-[0_0_10px_rgba(157,0,255,0.2)]">
+                <span class="dev-logo-mark" id="dev-lock-icon" aria-hidden="true">&lt;/&gt;</span><span class="font-orbitron text-[10px] sm:text-xs tracking-wider">DEV</span>
+            </button>
+            <button id="discord-login-btn" onclick="loginDiscord()" class="px-2.5 sm:px-3 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl transition flex items-center space-x-1.5 cursor-pointer shadow-[0_0_15px_rgba(88,101,242,0.4)]">
+                <i class="fa-brands fa-discord text-xs"></i><span id="discord-btn-text" class="font-orbitron text-[10px] sm:text-xs">Login Discord</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Navegación Móvil Inferior -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#05050b]/98 backdrop-blur-2xl border-t border-[#00ffcc]/20 px-1 py-2 flex justify-around items-center">
+        <button onclick="switchTab('lobby')" class="mobile-nav-btn flex flex-col items-center p-1 cursor-pointer text-gray-400 transition-colors" data-target="lobby">
+            <i class="fa-solid fa-network-wired text-sm mb-0.5"></i>
+            <span class="text-[8px] font-bold font-orbitron">Lobby</span>
+        </button>
+        <button onclick="switchTab('modeos')" class="mobile-nav-btn flex flex-col items-center p-1 cursor-pointer text-gray-400 transition-colors" data-target="modeos">
+            <i class="fa-solid fa-code text-sm mb-0.5"></i>
+            <span class="text-[8px] font-bold font-orbitron">Modelos</span>
+        </button>
+        <button onclick="switchTab('directos')" class="mobile-nav-btn flex flex-col items-center p-1 cursor-pointer text-gray-400 transition-colors" data-target="directos">
+            <i class="fa-solid fa-tower-broadcast text-sm mb-0.5"></i>
+            <span class="text-[8px] font-bold font-orbitron">Directos</span>
+        </button>
+        <button onclick="switchTab('dashboard')" class="mobile-nav-btn flex flex-col items-center p-1 cursor-pointer text-gray-400 transition-colors" data-target="dashboard">
+            <i class="fa-solid fa-robot text-sm mb-0.5"></i>
+            <span class="text-[8px] font-bold font-orbitron">Bots</span>
+        </button>
+        <button onclick="switchTab('soporte')" class="mobile-nav-btn flex flex-col items-center p-1 cursor-pointer text-gray-400 transition-colors" data-target="soporte">
+            <i class="fa-solid fa-headset text-sm mb-0.5"></i>
+            <span class="text-[8px] font-bold font-orbitron">Soporte</span>
+        </button>
+        <button onclick="openDevModal()" id="mobile-dev-tab-btn" class="mobile-nav-btn flex flex-col items-center p-1 cursor-pointer text-gray-400 transition-colors hidden" data-target="devzone">
+            <i class="fa-solid fa-terminal text-sm mb-0.5 text-[#9d00ff]"></i>
+            <span class="text-[8px] font-bold font-orbitron text-[#9d00ff]">DEV</span>
+        </button>
+    </div>
+
+    <!-- Contenido Principal -->
+    <main class="flex-grow container mx-auto px-3 sm:px-6 py-6 max-w-7xl pb-32 sm:pb-24 space-y-6">
+        
+        <!-- LOBBY -->
+        <section id="tab-lobby" class="tab-content space-y-6">
+            <div class="glass-panel px-4 py-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 border-[#00ffcc]/30 shadow-[0_0_20px_rgba(0,255,204,0.1)]">
+                <div class="flex items-center space-x-2 text-xs font-orbitron text-gray-300">
+                    <span class="w-2 h-2 rounded-full bg-[#00ffcc] animate-ping"></span>
+                    <span>SISTEMA EN LÍNEA • © 2026 MODEOS EL OBI</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-1.5 px-3 py-1 bg-black/50 border border-white/10 rounded-xl font-orbitron text-xs text-purple-300">
+                        <i class="fa-regular fa-calendar text-xs"></i>
+                        <span id="live-date" class="font-bold tracking-wider">00/00/0000</span>
+                    </div>
+                    <div class="flex items-center space-x-1.5 px-3 py-1 bg-black/50 border border-white/10 rounded-xl font-orbitron text-xs text-[#00ffcc]">
+                        <i class="fa-regular fa-clock text-xs"></i>
+                        <span id="live-clock" class="font-bold tracking-wider">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-5 sm:p-12 rounded-3xl relative overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-center border-[#00ffcc]/30 shadow-[0_0_40px_rgba(0,255,204,0.15)]">
+                <div class="absolute -right-20 -top-20 w-60 h-60 bg-[#9d00ff]/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+                
+                <div class="lg:col-span-7 space-y-5">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1 bg-[#9d00ff]/20 border border-[#9d00ff]/50 text-purple-300 text-[10px] sm:text-xs font-orbitron font-bold tracking-widest uppercase rounded-full">
+                        <i class="fa-solid fa-circle-nodes text-[#00ffcc]"></i><span>© 2026 MODEOS EL OBI • Todos los derechos reservados</span>
+                    </div>
+                    <h1 class="font-orbitron text-2xl sm:text-5xl font-black text-white tracking-tight glow-text leading-tight">
+                        MODEOS <span class="text-[#00ffcc]">EL OBI</span>
+                    </h1>
+                    <p class="text-gray-300 text-xs sm:text-base leading-relaxed">
+                        Desarrollo de bots a medida, creación y renovación integral de servidores de Discord bajo protocolos cifrados HTTPS. Propiedad intelectual protegida.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                        <button onclick="switchTab('modeos')" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-[#9d00ff] to-purple-600 text-white font-orbitron font-bold text-xs rounded-2xl transition hover:scale-105 shadow-[0_0_20px_rgba(157,0,255,0.4)] flex items-center justify-center space-x-2 cursor-pointer">
+                            <span>Ver Servicios y Modelos</span><i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button onclick="switchTab('dashboard')" class="w-full sm:w-auto px-6 py-3.5 bg-black/80 border border-[#00ffcc]/50 text-[#00ffcc] font-orbitron font-bold text-xs rounded-2xl transition hover:scale-105 shadow-[0_0_15px_rgba(0,255,204,0.2)] flex items-center justify-center space-x-2 cursor-pointer">
+                            <span>Gestionar Servidores / Bots</span><i class="fa-solid fa-robot"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- FOTO 1 -->
+                <div class="lg:col-span-5 relative group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-[#00ffcc] to-[#9d00ff] rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+                    <div class="relative rounded-2xl overflow-hidden border border-[#00ffcc]/40 bg-black/85 aspect-video flex items-center justify-center">
+                        <img id="img-lobby-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80" alt="MODEOS EL OBI Banner" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#030308]/80 via-transparent to-transparent flex items-end p-4">
+                            <span class="text-[11px] font-orbitron font-bold text-[#00ffcc] bg-black/60 px-3 py-1 rounded-lg border border-[#00ffcc]/30 backdrop-blur-md">© 2026 MODEOS EL OBI</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-3xl space-y-3 border-indigo-500/30">
+                    <div class="w-10 h-10 rounded-2xl bg-[#5865F2]/20 border border-[#5865F2]/50 text-[#5865F2] flex items-center justify-center shadow-[0_0_10px_rgba(88,101,242,0.2)]">
+                        <i class="fa-solid fa-robot text-base"></i>
+                    </div>
+                    <h3 class="font-orbitron font-bold text-white text-sm">Bots a Medida</h3>
+                    <p class="text-gray-400 text-xs leading-relaxed">Desarrollo y programación de bots personalizados con funciones únicas y comandos avanzados.</p>
+                </div>
+                <div class="glass-panel p-5 rounded-3xl space-y-3 border-purple-500/30">
+                    <div class="w-10 h-10 rounded-2xl bg-[#9d00ff]/20 border border-[#9d00ff]/50 flex items-center justify-center text-[#00ffcc] shadow-[0_0_10px_rgba(157,0,255,0.2)]">
+                        <i class="fa-solid fa-server text-base"></i>
+                    </div>
+                    <h3 class="font-orbitron font-bold text-white text-sm">Servidores desde Cero</h3>
+                    <p class="text-gray-400 text-xs leading-relaxed">Configuración completa de canales, roles, permisos y estética profesional para comunidades.</p>
+                </div>
+                <div class="glass-panel p-5 rounded-3xl space-y-3 border-[#00ffcc]/30">
+                    <div class="w-10 h-10 rounded-2xl bg-[#00ffcc]/20 border border-[#00ffcc]/50 flex items-center justify-center text-[#00ffcc] shadow-[0_0_10px_rgba(0,255,204,0.2)]">
+                        <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+                    </div>
+                    <h3 class="font-orbitron font-bold text-white text-sm">Renovación Total</h3>
+                    <p class="text-gray-400 text-xs leading-relaxed">Actualizamos y modernizamos servidores ya existentes para mejorar su actividad y seguridad.</p>
+                </div>
+                <div class="glass-panel p-5 rounded-3xl space-y-3 border-pink-500/30">
+                    <div class="w-10 h-10 rounded-2xl bg-[#ff007f]/20 border border-[#ff007f]/50 text-[#ff007f] flex items-center justify-center shadow-[0_0_10px_rgba(255,0,127,0.2)]">
+                        <i class="fa-solid fa-headset text-base"></i>
+                    </div>
+                    <h3 class="font-orbitron font-bold text-white text-sm">Soporte Técnico</h3>
+                    <p class="text-gray-400 text-xs leading-relaxed">Asistencia continua y resolución rápida de cualquier incidencia en tus bots y servidores.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODEOS -->
+        <section id="tab-modeos" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-5 sm:p-10 rounded-3xl space-y-6 border-[#00ffcc]/40">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+                    <div>
+                        <span class="text-[#00ffcc] text-[10px] sm:text-xs font-orbitron font-bold uppercase tracking-wider block mb-1">Historia, Filosofía y Servicios • © 2026 MODEOS EL OBI</span>
+                        <h2 class="font-orbitron text-xl sm:text-3xl font-black text-white glow-text">¿Qué es MODEOS EL OBI?</h2>
+                    </div>
+                    <div class="px-3 py-1 bg-[#9d00ff]/20 border border-[#9d00ff]/40 rounded-xl font-orbitron text-[10px] text-purple-300">
+                        © TODOS LOS DERECHOS RESERVADOS
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-gray-300 text-xs sm:text-sm leading-relaxed">
+                    <p>
+                        <strong>MODEOS EL OBI</strong> surge de la determinación, la resiliencia y la pasión absoluta por la tecnología de un chaval autodidacta que decidió aprender programación desde cero. Sin más herramientas que una pantalla, una enorme curiosidad y horas interminables frente al código, este proyecto ha evolucionado hasta convertirse en una plataforma sólida especializada en el ecosistema de Discord y la automatización digital.
+                    </p>
+                    <p>
+                        A lo largo de los años, el proyecto se ha centrado en dos grandes pilares: por un lado, el <strong>desarrollo y programación de bots personalizados</strong> que responden a necesidades complejas de moderación, economía, música y herramientas interactivas; y por otro, la <strong>creación, rediseño y optimización integral de servidores de Discord</strong>. Cada comunidad es tratada como un ecosistema vivo, donde la estética visual (vía banners, iconos, roles personalizados y canales estructurados) se une a una robusta seguridad contra raids y bots maliciosos.
+                    </p>
+                    <p>
+                        Lo que diferencia a MODEOS EL OBI frente a otras agencias genéricas es el trato cercano, el entendimiento profundo de lo que una comunidad de videojuegos, creadores de contenido o grupos de amigos necesita, y la adaptabilidad técnica para implementar funciones únicas que no encontrarás en bots públicos estandarizados. Aquí no hay plantillas aburridas: cada servidor y cada línea de código se construye a medida, con soporte técnico continuo para garantizar que todo funcione como un reloj suizo.
+                    </p>
+                </div>
+
+                <!-- FOTOS 2 Y 3 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/10">
+                    <div class="relative group">
+                        <div class="absolute -inset-1 bg-gradient-to-r from-[#9d00ff] to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                        <div class="relative rounded-2xl overflow-hidden border border-purple-500/30 bg-black/85 aspect-video flex items-center justify-center">
+                            <img id="img-modelos-1" src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80" alt="Servidor Discord Configurado" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#030308]/80 via-transparent to-transparent flex items-end p-4">
+                                <span class="text-[10px] font-orbitron font-bold text-purple-300 bg-black/60 px-2.5 py-1 rounded-lg border border-purple-500/30 backdrop-blur-md">© 2026 MODEOS EL OBI</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative group">
+                        <div class="absolute -inset-1 bg-gradient-to-r from-[#00ffcc] to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                        <div class="relative rounded-2xl overflow-hidden border border-[#00ffcc]/30 bg-black/85 aspect-video flex items-center justify-center">
+                            <img id="img-modelos-2" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80" alt="Programación de Bots" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#030308]/80 via-transparent to-transparent flex items-end p-4">
+                                <span class="text-[10px] font-orbitron font-bold text-[#00ffcc] bg-black/60 px-2.5 py-1 rounded-lg border border-[#00ffcc]/30 backdrop-blur-md">© 2026 MODEOS EL OBI</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DIRECTOS -->
+        <section id="tab-directos" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-5 sm:p-10 rounded-3xl space-y-6 border-[#ff007f]/40">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 px-3 py-1 bg-[#ff007f]/20 border border-[#ff007f]/50 text-[#ff007f] text-[10px] sm:text-xs font-orbitron font-bold uppercase rounded-full mb-2">
+                            <i class="fa-solid fa-tower-broadcast"></i><span>Canales oficiales • © 2026 MODEOS EL OBI</span>
+                        </div>
+                        <h2 class="font-orbitron text-xl sm:text-3xl font-black text-white">Centro de Streams</h2>
+                    </div>
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-black/60 border border-white/10 rounded-xl text-xs font-orbitron">
+                        <span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+                        <span class="text-gray-300">Estado: <strong class="text-white">Canales no configurados</strong></span>
+                    </div>
+                </div>
+
+                <!-- FOTO 4 -->
+                <div class="relative w-full aspect-video bg-black/80 rounded-2xl border border-white/10 overflow-hidden flex flex-col items-center justify-center p-6 text-center space-y-3 group">
+                    <img id="img-directos-banner" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80" alt="Stream Preview" class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+                    
+                    <div class="relative z-10 w-16 h-16 rounded-2xl bg-[#ff007f]/20 border border-[#ff007f]/40 flex items-center justify-center text-[#ff007f] text-2xl shadow-[0_0_25px_rgba(255,0,127,0.4)] group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-play"></i>
+                    </div>
+                    <h3 class="relative z-10 font-orbitron font-bold text-white text-base sm:text-lg">Canales de directo</h3>
+                    <p class="relative z-10 text-gray-300 text-xs sm:text-sm max-w-md">Todavía no hay canales configurados. Añade tus enlaces reales para mostrarlos aquí.</p>
+                    
+                    <div class="relative z-10 flex flex-wrap justify-center gap-3 pt-2">
+                        <span class="px-5 py-2.5 bg-black/60 border border-white/15 text-gray-400 font-orbitron text-xs font-bold rounded-xl flex items-center space-x-2">
+                            <i class="fa-solid fa-link-slash text-sm"></i><span>Enlaces pendientes</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DASHBOARD -->
+        <section id="tab-dashboard" class="tab-content hidden space-y-6">
+            <div id="dashboard-locked-view" class="glass-panel p-8 sm:p-16 rounded-3xl text-center space-y-6 border-red-500/40 shadow-[0_0_50px_rgba(255,0,0,0.1)]">
+                <div class="w-16 h-16 bg-red-500/20 border border-red-500/50 rounded-2xl mx-auto flex items-center justify-center text-red-400 text-2xl shadow-[0_0_20px_rgba(255,0,0,0.3)] animate-bounce">
+                    <i class="fa-solid fa-shield-cat"></i>
+                </div>
+                <div class="space-y-2 max-w-md mx-auto">
+                    <h2 class="font-orbitron text-xl sm:text-2xl font-black text-white">Dashboard de Servidores y Bots</h2>
+                    <p class="text-xs sm:text-sm text-gray-400">© 2026 MODEOS EL OBI. Inicia sesión con Discord para ver tus servidores, comprobar si nuestros bots están dentro y añadirlos si faltan.</p>
+                </div>
+                <button onclick="loginDiscord()" class="px-6 py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron text-xs font-bold rounded-2xl transition inline-flex items-center space-x-2 shadow-[0_0_20px_rgba(88,101,242,0.5)] cursor-pointer">
+                    <i class="fa-brands fa-discord text-base"></i><span>Iniciar Sesión con Discord</span>
+                </button>
+            </div>
+
+            <div id="dashboard-unlocked-view" class="space-y-6 hidden">
+                <div class="glass-panel p-5 sm:p-8 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-[#5865F2]/40">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 px-3 py-1 bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#5865F2] text-[10px] font-orbitron font-bold uppercase rounded-full mb-2">
+                            <i class="fa-brands fa-discord"></i><span>© 2026 MODEOS EL OBI • Servidores de <span id="user-discord-name" class="text-white font-bold">Usuario</span></span>
+                        </div>
+                        <h2 class="font-orbitron text-xl sm:text-3xl font-black text-white">Gestión de Comunidades</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm mt-1">Selecciona un servidor para configurar los bots de MODEOS EL OBI o invitarlos si aún no están dentro.</p>
+                    </div>
+                    <button onclick="logoutDiscord()" class="px-4 py-2 bg-red-500/20 hover:bg-red-500/40 border border-red-500/40 text-red-400 rounded-xl text-xs font-orbitron font-bold transition cursor-pointer">
+                        Cerrar Sesión
+                    </button>
+                </div>
+
+                <div id="user-guilds-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
+
+        <!-- ZONA SOPORTE Y DISCORD (NUEVA SECCIÓN FUSIONADA) -->
+        <section id="tab-soporte" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 sm:p-10 rounded-3xl space-y-6 border-[#5865F2]/40 shadow-[0_0_40px_rgba(88,101,242,0.15)]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 px-3 py-1 bg-[#5865F2]/20 border border-[#5865F2]/50 text-[#5865F2] text-[10px] sm:text-xs font-orbitron font-bold uppercase rounded-full mb-2">
+                            <i class="fa-brands fa-discord animate-pulse"></i><span>Asistencia Oficial • © 2026 MODEOS EL OBI</span>
+                        </div>
+                        <h2 class="font-orbitron text-xl sm:text-3xl font-black text-white">[ ZONA DE SOPORTE TÉCNICO ]</h2>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-gray-300 text-xs sm:text-sm leading-relaxed">
+                    <p>
+                        ¿Problemas con un bot, fallos en tu servidor de Discord o dudas con el panel DEV? Nuestro equipo de asistencia está preparado para resolver cualquier incidencia técnica bajo protocolos seguros.
+                    </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-black/50 border border-white/10 rounded-2xl">
+                    <div class="space-y-1 text-center sm:text-left">
+                        <h3 class="font-orbitron font-bold text-white text-sm">Servidor Oficial de Discord</h3>
+                        <p class="text-xs text-gray-400">Únete para abrir tickets de soporte, solicitar bots a medida o gestionar tu comunidad.</p>
+                    </div>
+                    <a href=" https://discord.gg/kaAjxbn8Ga " target="_blank" class="px-6 py-3.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold text-xs rounded-2xl transition hover:scale-105 shadow-[0_0_20px_rgba(88,101,242,0.4)] flex items-center space-x-2 shrink-0 cursor-pointer">
+                        <i class="fa-brands fa-discord text-base"></i><span>🚀 Unirme al Servidor de Discord</span>
+                    </a>
+                </div>
+
+                <div class="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl flex items-start space-x-3 text-yellow-300 text-xs">
+                    <i class="fa-solid fa-triangle-exclamation text-base shrink-0 mt-0.5"></i>
+                    <div>
+                        <strong class="font-orbitron block mb-0.5">AVISO DE SEGURIDAD:</strong>
+                        <span>El equipo oficial de MODEOS EL OBI <strong>nunca</strong> te pedirá tokens ni contraseñas por mensaje privado. Mantén tus credenciales protegidas.</span>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 space-y-3">
+                    <div>
+                        <h3 class="font-orbitron font-bold text-white text-sm flex items-center">
+                            <i class="fa-solid fa-image text-[#00ffcc] mr-2"></i>Banner de MODEOS EL OBI
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-1">Selecciona desde tus archivos el banner que quieres mostrar en esta sección.</p>
+                    </div>
+                    <label id="support-banner-uploader" for="support-banner-file" class="flex flex-col items-center justify-center w-full min-h-32 p-4 rounded-2xl border border-dashed border-[#00ffcc]/40 bg-black/40 hover:bg-[#00ffcc]/10 transition cursor-pointer group opacity-50">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-[#00ffcc] mb-2 group-hover:scale-110 transition-transform"></i>
+                        <span id="support-banner-uploader-title" class="font-orbitron text-xs font-bold text-white">Inicia sesión DEV para subir un banner</span>
+                        <span class="text-[10px] text-gray-400 mt-1">PNG, JPG o WEBP</span>
+                        <input type="file" id="support-banner-file" accept="image/png,image/jpeg,image/webp" onchange="handleSupportBannerUpload(event)" class="hidden" disabled>
+                    </label>
+                    <div id="support-banner-preview-wrapper" class="hidden relative overflow-hidden rounded-2xl border border-[#00ffcc]/30 bg-black/70 aspect-video">
+                        <img id="support-banner-preview" src="" alt="Banner de MODEOS EL OBI" class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ZONA DEV -->
+        <section id="tab-devzone" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-5 sm:p-10 rounded-3xl space-y-6 border-[#9d00ff]/60 shadow-[0_0_40px_rgba(157,0,255,0.2)]">
+                <div class="flex items-center justify-between border-b border-[#9d00ff]/30 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 px-3 py-1 bg-[#9d00ff]/20 border border-[#9d00ff]/50 text-[#9d00ff] text-[10px] sm:text-xs font-orbitron font-bold uppercase rounded-full mb-1">
+                            <i class="fa-solid fa-shield-halved"></i><span>© 2026 MODEOS EL OBI • Zona DEV Blindada HTTPS</span>
+                        </div>
+                        <h2 class="font-orbitron text-xl sm:text-3xl font-black text-white">Zona DEV - Panel de Control Total</h2>
+                    </div>
+                    <button onclick="lockDevZone()" class="px-3 py-2 bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-400 text-xs font-bold rounded-xl transition flex items-center space-x-1 cursor-pointer">
+                        <i class="fa-solid fa-lock"></i><span class="font-orbitron">Bloquear</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-4 bg-black/40 border border-white/10 rounded-2xl space-y-2">
+                        <div class="flex justify-between text-xs font-orbitron text-gray-400">
+                            <span>Uso de CPU</span>
+                            <span id="cpu-stat" class="text-[#00ffcc]">14%</span>
+                        </div>
+                        <div class="w-full h-2 bg-black rounded-full overflow-hidden border border-white/10">
+                            <div id="cpu-bar" class="h-full bg-gradient-to-r from-[#00ffcc] to-teal-500 transition-all duration-500" style="width: 14%;"></div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-black/40 border border-white/10 rounded-2xl space-y-2">
+                        <div class="flex justify-between text-xs font-orbitron text-gray-400">
+                            <span>Memoria RAM</span>
+                            <span id="ram-stat" class="text-purple-300">1.2 GB / 4 GB</span>
+                        </div>
+                        <div class="w-full h-2 bg-black rounded-full overflow-hidden border border-white/10">
+                            <div id="ram-bar" class="h-full bg-gradient-to-r from-[#9d00ff] to-purple-500 transition-all duration-500" style="width: 30%;"></div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <div class="text-[10px] font-orbitron text-gray-400">Modo Mantenimiento</div>
+                            <div id="maintenance-status" class="text-xs font-orbitron font-bold text-emerald-400">Desactivado</div>
+                        </div>
+                        <button onclick="toggleMaintenanceMode()" id="maintenance-btn" class="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 rounded-xl text-xs font-orbitron font-bold hover:bg-emerald-500/30 cursor-pointer">
+                            Activar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="p-5 bg-black/50 border border-white/10 rounded-2xl space-y-4">
+                        <h3 class="font-orbitron text-sm font-bold text-white flex items-center">
+                            <i class="fa-solid fa-robot text-[#00ffcc] mr-2"></i>Registrar Nuevo Bot
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-[11px] font-orbitron text-gray-400 block mb-1">Nombre del Bot</label>
+                                <input type="text" id="new-bot-name" placeholder="Ej: OBI Moderation Core" onkeydown="submitOnEnter(event, registerNewBot)" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[#00ffcc]">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-orbitron text-gray-400 block mb-1">Descripción</label>
+                                <input type="text" id="new-bot-desc" placeholder="Ej: Sistema automático de avisos." onkeydown="submitOnEnter(event, registerNewBot)" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[#00ffcc]">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-orbitron text-gray-400 block mb-1">URL de Avatar</label>
+                                <input type="text" id="new-bot-avatar" placeholder="https://..." onkeydown="submitOnEnter(event, registerNewBot)" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[#00ffcc]">
+                            </div>
+                            <button onclick="registerNewBot()" class="w-full py-2.5 bg-gradient-to-r from-[#00ffcc] to-teal-500 text-black font-orbitron font-bold text-xs rounded-xl hover:opacity-90 transition cursor-pointer">
+                                Añadir Bot al Sistema
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-5 bg-black/50 border border-white/10 rounded-2xl space-y-4">
+                        <h3 class="font-orbitron text-sm font-bold text-white flex items-center">
+                            <i class="fa-solid fa-key text-yellow-400 mr-2"></i>Variables de Entorno Cifradas (.env)
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-[11px] font-orbitron text-gray-400 block mb-1">Discord Bot Token Principal</label>
+                                <input type="password" id="env-discord-token" placeholder="MTI3..." onkeydown="submitOnEnter(event, saveEnvironmentConfig)" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs font-mono outline-none focus:border-yellow-400">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-orbitron text-gray-400 block mb-1">API Key de Base de Datos</label>
+                                <input type="password" id="env-db-key" placeholder="obi_sec_key_..." onkeydown="submitOnEnter(event, saveEnvironmentConfig)" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs font-mono outline-none focus:border-yellow-400">
+                            </div>
+                            <button onclick="saveEnvironmentConfig()" class="w-full py-2.5 bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 font-orbitron font-bold text-xs rounded-xl hover:bg-yellow-500/30 transition cursor-pointer">
+                                Guardar Claves Cifradas
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="p-5 bg-black/50 border border-white/10 rounded-2xl space-y-4">
+                        <h3 class="font-orbitron text-sm font-bold text-white flex items-center">
+                            <i class="fa-solid fa-terminal text-purple-400 mr-2"></i>Modo de la Terminal
+                        </h3>
+                        <p class="text-xs text-gray-400">Selecciona el perfil visual de la consola:</p>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="setTerminalMode('classic')" class="p-3 bg-black/60 hover:bg-black/90 border border-emerald-500/40 rounded-xl text-left transition cursor-pointer">
+                                <div class="text-[11px] font-orbitron font-bold text-emerald-400">Clásico Verde</div>
+                            </button>
+                            <button onclick="setTerminalMode('matrix')" class="p-3 bg-black/60 hover:bg-black/90 border border-green-400/40 rounded-xl text-left transition cursor-pointer">
+                                <div class="text-[11px] font-orbitron font-bold text-green-300">Matrix Dark</div>
+                            </button>
+                            <button onclick="setTerminalMode('cyberpunk')" class="p-3 bg-black/60 hover:bg-black/90 border border-[#00ffcc]/40 rounded-xl text-left transition cursor-pointer">
+                                <div class="text-[11px] font-orbitron font-bold text-[#00ffcc]">Cyber Cyan</div>
+                            </button>
+                            <button onclick="setTerminalMode('alert')" class="p-3 bg-black/60 hover:bg-black/90 border border-red-500/40 rounded-xl text-left transition cursor-pointer">
+                                <div class="text-[11px] font-orbitron font-bold text-red-400">Alerta Roja</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-5 bg-black/50 border border-white/10 rounded-2xl space-y-4">
+                        <h3 class="font-orbitron text-sm font-bold text-white flex items-center">
+                            <i class="fa-solid fa-bullhorn text-pink-400 mr-2"></i>Anuncio Global (Broadcast)
+                        </h3>
+                        <p class="text-xs text-gray-400">Envía un mensaje de alerta a toda la plataforma:</p>
+                        <div class="space-y-3">
+                            <input type="text" id="broadcast-msg-input" placeholder="Ej: ¡Actualización desplegada!" onkeydown="submitOnEnter(event, sendGlobalBroadcast)" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-pink-400">
+                            <button onclick="sendGlobalBroadcast()" class="w-full py-2.5 bg-pink-500/20 border border-pink-500/40 text-pink-300 font-orbitron font-bold text-xs rounded-xl hover:bg-pink-500/30 transition cursor-pointer">
+                                Emitir Anuncio Global
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-[#00ffcc]/30">
+                    <div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
+                        <div>
+                            <h3 class="font-orbitron text-sm font-bold text-white flex items-center">
+                                <i class="fa-solid fa-satellite-dish text-[#00ffcc] mr-2"></i>Centro de Control de Bots
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-1">Supervisa eventos y envía comandos mediante tu backend seguro de Discord.</p>
+                        </div>
+                        <span id="discord-bot-connection" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-yellow-500/40 bg-yellow-500/10 text-yellow-300 text-[10px] font-orbitron font-bold">
+                            <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>BACKEND SIN CONECTAR
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="p-4 bg-black/70 border border-[#00ffcc]/25 rounded-2xl space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-orbitron text-xs font-bold text-[#00ffcc] flex items-center">
+                                    <i class="fa-solid fa-wave-square mr-2"></i>Logs en tiempo real
+                                </h4>
+                                <button onclick="clearBotLiveLogs()" class="text-[10px] text-gray-400 hover:text-white transition cursor-pointer" title="Limpiar logs">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                            <div id="bot-live-logs" class="bg-[#020507] border border-white/10 rounded-xl p-3 font-mono text-[10px] text-emerald-300 h-56 overflow-y-auto space-y-1.5">
+                                <div class="text-gray-500">[SYSTEM] Esperando conexión con /api/discord/logs...</div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-black/70 border border-[#9d00ff]/30 rounded-2xl space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-orbitron text-xs font-bold text-purple-300 flex items-center">
+                                    <i class="fa-solid fa-terminal mr-2"></i>Terminal de comandos
+                                </h4>
+                                <span class="text-[10px] text-gray-500 font-mono">API segura</span>
+                            </div>
+                            <div id="bot-terminal-output" class="bg-[#020507] border border-white/10 rounded-xl p-3 font-mono text-[10px] text-gray-300 h-40 overflow-y-auto space-y-1.5">
+                                <div class="text-gray-500">[SYSTEM] Los comandos se enviarán al backend del bot.</div>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="bot-command-input" placeholder="Ej: !ping" onkeydown="if (event.key === 'Enter') runBotCommand()" class="min-w-0 flex-1 bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs font-mono outline-none focus:border-[#00ffcc]">
+                                <button onclick="runBotCommand()" class="px-3 py-2 bg-[#9d00ff]/25 hover:bg-[#9d00ff]/45 border border-[#9d00ff]/50 text-purple-200 rounded-xl text-xs cursor-pointer" title="Enviar comando">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-[#9d00ff]/30 pb-2">
+                    <div>
+                        <h3 class="font-orbitron text-sm font-bold text-white flex items-center">
+                            <i class="fa-solid fa-images text-[#00ffcc] mr-2"></i>Gestor Completo de las 4 Imágenes de la Web
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-1">Sube archivos locales o pega enlaces URL seguros (HTTPS):</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-4 bg-black/40 border border-white/10 rounded-2xl space-y-3">
+                            <label class="text-xs font-orbitron font-bold text-purple-300 block">Foto 1: Lobby Banner</label>
+                            <div class="space-y-2">
+                                <input type="file" id="file-lobby" accept="image/*" onchange="handleImageUpload(event, 'obi_img_lobby', 'img-lobby-banner')" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-orbitron file:font-bold file:bg-[#9d00ff]/20 file:text-[#00ffcc] hover:file:bg-[#9d00ff]/40 cursor-pointer">
+                                <div class="flex gap-2">
+                                    <input type="text" id="input-url-lobby" placeholder="O pega enlace https://..." onkeydown="submitOnEnter(event, () => saveUrlImage('input-url-lobby', 'obi_img_lobby', 'img-lobby-banner'))" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[#00ffcc]">
+                                    <button onclick="saveUrlImage('input-url-lobby', 'obi_img_lobby', 'img-lobby-banner')" class="px-3 py-2 bg-[#00ffcc]/20 border border-[#00ffcc]/40 text-[#00ffcc] rounded-xl text-xs font-orbitron font-bold hover:bg-[#00ffcc]/30 cursor-pointer">OK</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-black/40 border border-white/10 rounded-2xl space-y-3">
+                            <label class="text-xs font-orbitron font-bold text-purple-300 block">Foto 2: Modelos (Servidor)</label>
+                            <div class="space-y-2">
+                                <input type="file" id="file-modelos1" accept="image/*" onchange="handleImageUpload(event, 'obi_img_modelos1', 'img-modelos-1')" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-orbitron file:font-bold file:bg-[#9d00ff]/20 file:text-[#00ffcc] hover:file:bg-[#9d00ff]/40 cursor-pointer">
+                                <div class="flex gap-2">
+                                    <input type="text" id="input-url-modelos1" placeholder="O pega enlace https://..." onkeydown="submitOnEnter(event, () => saveUrlImage('input-url-modelos1', 'obi_img_modelos1', 'img-modelos-1'))" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[#00ffcc]">
+                                    <button onclick="saveUrlImage('input-url-modelos1', 'obi_img_modelos1', 'img-modelos-1')" class="px-3 py-2 bg-[#00ffcc]/20 border border-[#00ffcc]/40 text-[#00ffcc] rounded-xl text-xs font-orbitron font-bold hover:bg-[#00ffcc]/30 cursor-pointer">OK</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-black/40 border border-white/10 rounded-2xl space-y-3">
+                            <label class="text-xs font-orbitron font-bold text-purple-300 block">Foto 3: Modelos (Código)</label>
+                            <div class="space-y-2">
+                                <input type="file" id="file-modelos2" accept="image/*" onchange="handleImageUpload(event, 'obi_img_modelos2', 'img-modelos-2')" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-orbitron file:font-bold file:bg-[#9d00ff]/20 file:text-[#00ffcc] hover:file:bg-[#9d00ff]/40 cursor-pointer">
+                                <div class="flex gap-2">
+                                    <input type="text" id="input-url-modelos2" placeholder="O pega enlace https://..." onkeydown="submitOnEnter(event, () => saveUrlImage('input-url-modelos2', 'obi_img_modelos2', 'img-modelos-2'))" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[#00ffcc]">
+                                    <button onclick="saveUrlImage('input-url-modelos2', 'obi_img_modelos2', 'img-modelos-2')" class="px-3 py-2 bg-[#00ffcc]/20 border border-[#00ffcc]/40 text-[#00ffcc] rounded-xl text-xs font-orbitron font-bold hover:bg-[#00ffcc]/30 cursor-pointer">OK</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-black/40 border border-white/10 rounded-2xl space-y-3">
+                            <label class="text-xs font-orbitron font-bold text-purple-300 block">Foto 4: Directos Banner</label>
+                            <div class="space-y-2">
+                                <input type="file" id="file-directos" accept="image/*" onchange="handleImageUpload(event, 'obi_img_directos', 'img-directos-banner')" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-orbitron file:font-bold file:bg-[#9d00ff]/20 file:text-[#00ffcc] hover:file:bg-[#9d00ff]/40 cursor-pointer">
+                                <div class="flex gap-2">
+                                    <input type="text" id="input-url-directos" placeholder="O pega enlace https://..." onkeydown="submitOnEnter(event, () => saveUrlImage('input-url-directos', 'obi_img_directos', 'img-directos-banner'))" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[#00ffcc]">
+                                    <button onclick="saveUrlImage('input-url-directos', 'obi_img_directos', 'img-directos-banner')" class="px-3 py-2 bg-[#00ffcc]/20 border border-[#00ffcc]/40 text-[#00ffcc] rounded-xl text-xs font-orbitron font-bold hover:bg-[#00ffcc]/30 cursor-pointer">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-white/10">
+                    <h3 class="font-orbitron text-sm font-bold text-white flex items-center">
+                        <i class="fa-solid fa-code text-[#9d00ff] mr-2"></i>Consola y Registro de Actividad Pro
+                    </h3>
+                    <div class="bg-black/85 border border-[#9d00ff]/30 rounded-2xl p-4 font-mono text-xs text-green-400 space-y-1.5 h-48 overflow-y-auto shadow-inner" id="dev-console">
+                        <div class="text-gray-500">[SYSTEM] MODEOS_EL_OBI v2.9 Secure HTTPS kernel initialized...</div>
+                        <div class="text-purple-400">[AUTH] Esperando autenticación DEV segura...</div>
+                        <div class="text-[#00ffcc]">[COPYRIGHT] © 2026 MODEOS EL OBI. Todos los derechos reservados.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AVISO LEGAL Y CONDICIONES -->
+        <section id="tab-legal" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 sm:p-10 rounded-3xl space-y-6 border-[#00ffcc]/40 text-xs sm:text-sm text-gray-300 leading-relaxed">
+                <div class="border-b border-white/10 pb-4">
+                    <span class="text-[#00ffcc] font-orbitron text-[10px] font-bold uppercase tracking-widest block mb-1">Marco Legal, RGPD y Condiciones de Uso</span>
+                    <h2 class="font-orbitron text-2xl font-black text-white glow-text">Aviso Legal y Condiciones</h2>
+                </div>
+
+                <div class="space-y-5">
+                    <div>
+                        <h3 class="font-orbitron font-bold text-white text-sm mb-1">1. Datos Identificativos (Aviso Legal)</h3>
+                        <p>En cumplimiento de la Ley 34/2002 (LSSI-CE), se informa que <strong>MODEOS EL OBI</strong> es un proyecto independiente enfocado al desarrollo de bots de Discord, configuración integral de comunidades y soporte técnico digital bajo cifrado HTTPS. © 2026 Todos los derechos reservados.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-orbitron font-bold text-white text-sm mb-1">2. Términos y Condiciones de Uso</h3>
+                        <p>El acceso y uso de esta plataforma cifrada atribuye la condición de usuario e implica la aceptación total de las presentes condiciones.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-orbitron font-bold text-white text-sm mb-1">3. Protección de Datos (RGPD)</h3>
+                        <p>Los datos recopilados mediante la autenticación de Discord u otros formularios se tratan de forma confidencial y segura conforme al RGPD bajo conexiones protegidas SSL/TLS.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-orbitron font-bold text-white text-sm mb-1">4. Propiedad Intelectual</h3>
+                        <p>© 2026 MODEOS EL OBI. Todos los elementos de diseño, textos, código fuente e identidad visual de MODEOS EL OBI están protegidos por las leyes de propiedad intelectual.</p>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex justify-end">
+                    <button onclick="switchTab('lobby')" class="px-5 py-2.5 bg-[#00ffcc]/20 hover:bg-[#00ffcc]/35 border border-[#00ffcc]/50 text-[#00ffcc] font-orbitron text-xs font-bold rounded-xl transition cursor-pointer">Volver al Lobby</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DE CLAVE DEV -->
+    <div id="dev-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-6 sm:p-8 rounded-3xl max-w-md w-full space-y-5 border-[#9d00ff]/60 shadow-[0_0_50px_rgba(157,0,255,0.3)] relative">
+            <button onclick="closeDevModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-[#9d00ff]/20 border border-[#9d00ff]/50 flex items-center justify-center text-[#9d00ff] text-xl shadow-[0_0_15px_rgba(157,0,255,0.3)]">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <div>
+                    <h3 class="font-orbitron font-bold text-white text-base">Acceso Desarrollador</h3>
+                    <p class="text-xs text-gray-400">Introduce la contraseña de acceso DEV</p>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <input type="password" id="dev-password-input" placeholder="Contraseña de Desarrollador..." onkeydown="submitOnEnter(event, verifyDevPassword)" class="w-full bg-[#05050b] border border-white/20 rounded-2xl px-4 py-3 text-white text-xs font-mono outline-none focus:border-[#9d00ff] shadow-inner">
+                <div id="dev-error-msg" class="text-red-400 text-xs font-orbitron hidden"></div>
+                <div id="dev-attempts-msg" class="text-yellow-300 text-[10px] font-orbitron hidden"></div>
+            </div>
+            <div class="flex space-x-3 pt-2">
+                <button onclick="closeDevModal()" class="w-1/2 py-3 bg-black/50 hover:bg-black/80 border border-white/10 rounded-2xl text-xs font-orbitron font-bold text-gray-300 transition cursor-pointer">Cancelar</button>
+                <button onclick="verifyDevPassword()" class="w-1/2 py-3 bg-gradient-to-r from-[#9d00ff] to-purple-600 hover:opacity-90 rounded-2xl text-xs font-orbitron font-bold text-white transition shadow-[0_0_20px_rgba(157,0,255,0.4)] cursor-pointer">Acceder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-[#00ffcc]/20 bg-[#05050b]/90 py-6 px-4 text-center text-[10px] sm:text-xs font-orbitron space-y-3 z-30">
+        <div class="flex flex-wrap items-center justify-center gap-3 text-gray-400">
+            <span>SYS_DATE: <strong id="footer-date" class="text-purple-300">00/00/0000</strong></span>
+            <span>•</span>
+            <span>SYS_TIME: <strong id="footer-clock" class="text-[#00ffcc]">00:00:00</strong></span>
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-4 text-gray-400">
+            <button onclick="switchTab('legal')" class="hover:text-[#00ffcc] transition cursor-pointer font-bold text-purple-300">Aviso Legal y Condiciones</button>
+            <span>•</span>
+            <button onclick="openCookieSettings()" class="hover:text-[#00ffcc] transition cursor-pointer">Configurar Cookies</button>
+        </div>
+        <p class="text-white font-bold pt-1">© 2026 MODEOS EL OBI. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- BANNER DE COOKIES -->
+    <div id="cookie-banner" class="fixed bottom-0 left-0 right-0 z-50 bg-[#080812]/98 backdrop-blur-2xl border-t border-[#00ffcc]/40 p-4 sm:p-5 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] hidden">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="space-y-1 text-left">
+                <h4 class="font-orbitron font-bold text-white text-xs sm:text-sm flex items-center">
+                    <i class="fa-solid fa-cookie-bite text-[#00ffcc] mr-2"></i>Aviso de Cookies y Privacidad (RGPD)
+                </h4>
+                <p class="text-gray-300 text-[11px] sm:text-xs max-w-3xl leading-relaxed">
+                    © 2026 MODEOS EL OBI. Utilizamos cookies técnicas obligatorias bajo cifrado HTTPS.
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <button onclick="rejectNonEssentialCookies()" class="px-4 py-2.5 bg-black/60 hover:bg-black/90 border border-red-500/40 text-red-400 hover:text-red-300 font-orbitron font-bold rounded-xl text-xs transition cursor-pointer">Denegar No Esenciales</button>
+                <button onclick="openCookieSettings()" class="px-4 py-2.5 bg-black/60 hover:bg-black/90 border border-white/20 text-gray-300 hover:text-white font-orbitron font-bold rounded-xl text-xs transition cursor-pointer">Configurar</button>
+                <button onclick="acceptAllCookies()" class="px-5 py-2.5 bg-[#00ffcc] hover:bg-[#00e6b8] text-black font-orbitron font-extrabold rounded-xl text-xs transition shadow-[0_0_15px_rgba(0,255,204,0.4)] cursor-pointer">Aceptar Todas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURACIÓN DE COOKIES -->
+    <div id="cookie-settings-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-6 sm:p-8 rounded-3xl w-full max-w-lg space-y-6 border-[#00ffcc]/50 shadow-[0_0_30px_rgba(0,255,204,0.3)]">
+            <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 class="font-orbitron text-base sm:text-lg font-bold text-white flex items-center">
+                    <i class="fa-solid fa-gear text-[#00ffcc] mr-2"></i>Panel de Configuración de Cookies
+                </h3>
+                <button onclick="closeCookieSettings()" class="text-gray-400 hover:text-white p-1 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1 text-xs text-gray-300">
+                <div class="p-3.5 bg-black/50 border border-white/10 rounded-2xl space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-orbitron font-bold text-white">Cookies Técnicas / Esenciales</span>
+                        <span class="px-2 py-0.5 bg-green-500/20 text-green-400 border border-green-500/40 rounded-md font-mono text-[10px]">Obligatorias</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 leading-relaxed">© 2026 MODEOS EL OBI. Necesarias para el funcionamiento de la web y mantenimiento de sesiones seguras.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-3 border-t border-white/10">
+                <button onclick="closeCookieSettings()" class="px-4 py-2 bg-black/50 hover:bg-black/80 border border-white/20 rounded-xl text-xs font-orbitron font-bold text-gray-300 transition cursor-pointer">Cancelar</button>
+                <button onclick="saveCustomCookiePreferences()" class="px-5 py-2 bg-[#00ffcc] hover:bg-[#00e6b8] text-black rounded-xl text-xs font-orbitron font-bold transition shadow-[0_0_15px_rgba(0,255,204,0.3)] cursor-pointer">Guardar Preferencias</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL UNIFICADO -->
+    <script>
+        let DISCORD_CLIENT_ID = '';
+        const API_BASE_URL = window.location.hostname === 'localhost'
+            ? ''
+            : 'https://TU-SERVICIO.onrender.com';
+        const DISCORD_BOT_API_BASE = `${API_BASE_URL}/api/discord`;
+        let discordBotLogStream = null;
+
+        function apiUrl(path) {
+            return `${API_BASE_URL}${path}`;
+        }
+
+        function secureHashEncode(str) {
+            try { return btoa(encodeURIComponent(str) + "_obi_sec_2026"); } catch(e) { return str; }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('live-clock').innerText = `${hours}:${minutes}:${seconds}`;
+            document.getElementById('footer-clock').innerText = `${hours}:${minutes}:${seconds}`;
+
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            document.getElementById('live-date').innerText = `${day}/${month}/${year}`;
+            document.getElementById('footer-date').innerText = `${day}/${month}/${year}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function closeBetaBanner() {
+            document.getElementById('beta-banner').style.display = 'none';
+        }
+
+        let isDevAuthenticated = false;
+        let devFailedAttempts = Number(localStorage.getItem('obi_dev_failed_attempts') || 0);
+        let devAccessLocked = localStorage.getItem('obi_dev_access_locked') === 'true';
+        let discordUser = null;
+
+        function updateDiscordAuthUI() {
+            const btnText = document.getElementById('discord-btn-text');
+            const lockedView = document.getElementById('dashboard-locked-view');
+            const unlockedView = document.getElementById('dashboard-unlocked-view');
+            const userNameEl = document.getElementById('user-discord-name');
+
+            if (discordUser) {
+                btnText.innerText = discordUser.username || "Conectado";
+                document.getElementById('discord-login-btn').className = "px-2.5 sm:px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center space-x-1.5 cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.4)]";
+                
+                if (lockedView) lockedView.classList.add('hidden');
+                if (unlockedView) unlockedView.classList.remove('hidden');
+                if (userNameEl) userNameEl.innerText = discordUser.username || "Administrador";
+            } else {
+                btnText.innerText = "Login Discord";
+                document.getElementById('discord-login-btn').className = "px-2.5 sm:px-3 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl transition flex items-center space-x-1.5 cursor-pointer shadow-[0_0_15px_rgba(88,101,242,0.4)]";
+                
+                if (lockedView) lockedView.classList.remove('hidden');
+                if (unlockedView) unlockedView.classList.add('hidden');
+            }
+        }
+
+        function loginDiscord() {
+            if (discordUser) return switchTab('dashboard');
+            window.location.href = apiUrl('/auth/discord');
+        }
+
+        function logoutDiscord() {
+            fetch(apiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' })
+                .finally(() => {
+                    discordUser = null;
+                    updateDiscordAuthUI();
+                    updateSupportBannerUploader();
+                    switchTab('lobby');
+                });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const consent = localStorage.getItem('obi_cookie_consent');
+            if (!consent) {
+                document.getElementById('cookie-banner').classList.remove('hidden');
+            }
+
+            updateDiscordAuthUI();
+            fetch(apiUrl('/api/config'), { credentials: 'include' })
+                .then(response => response.json())
+                .then(config => { DISCORD_CLIENT_ID = config.discordClientId || ''; })
+                .catch(error => console.error('Error al cargar la configuración pública:', error));
+            fetch(apiUrl('/api/auth/me'), { credentials: 'include' })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.user) return;
+                    discordUser = data.user;
+                    updateDiscordAuthUI();
+                    fetch(apiUrl('/api/discord/guilds'), { credentials: 'include' })
+                        .then(response => response.json())
+                        .then(guilds => renderGuildsCards(guilds));
+                })
+                .catch(error => console.error('Error al recuperar la sesión:', error));
+
+            const mappings = [
+                { key: 'obi_img_lobby', id: 'img-lobby-banner' },
+                { key: 'obi_img_modelos1', id: 'img-modelos-1' },
+                { key: 'obi_img_modelos2', id: 'img-modelos-2' },
+                { key: 'obi_img_directos', id: 'img-directos-banner' },
+                { key: 'obi_support_banner', id: 'support-banner-preview' }
+            ];
+            mappings.forEach(m => {
+                const saved = localStorage.getItem(m.key);
+                if (saved) {
+                    const el = document.getElementById(m.id);
+                    if (el) {
+                        el.src = saved;
+                        if (m.id === 'support-banner-preview') {
+                            document.getElementById('support-banner-preview-wrapper').classList.remove('hidden');
+                        }
+                    }
+                }
+            });
+        });
+
+        function renderGuildsCards(guilds) {
+            const container = document.getElementById('user-guilds-container');
+            if (!container || !Array.isArray(guilds)) return;
+
+            container.innerHTML = guilds.map(guild => {
+                const hasBot = guild.botPresent === true;
+                const iconUrl = guild.icon 
+                    ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png` 
+                    : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&q=80';
+
+                return `
+                    <div class="glass-panel p-5 rounded-3xl space-y-4 border-white/15 relative overflow-hidden group">
+                        <div class="flex items-center space-x-3">
+                            <img src="${iconUrl}" alt="${guild.name}" class="w-12 h-12 rounded-2xl object-cover border border-[#00ffcc]/30 shadow-md">
+                            <div class="truncate">
+                                <h3 class="font-orbitron font-bold text-white text-sm truncate">${guild.name}</h3>
+                                <div class="flex items-center space-x-2 mt-0.5">
+                                    <span class="w-2 h-2 rounded-full ${hasBot ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"></span>
+                                    <span class="text-[10px] font-orbitron text-gray-300">${hasBot ? 'Bot Activo' : 'Bot Ausente'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-xs font-mono">ID: ${guild.id}</p>
+                        <div class="pt-2">
+                            ${hasBot ? `
+                                <button onclick="openServerConfig('${guild.id}', '${guild.name}')" class="w-full py-2 bg-[#00ffcc]/20 hover:bg-[#00ffcc]/40 border border-[#00ffcc]/40 text-[#00ffcc] font-orbitron text-[10px] font-bold rounded-xl transition cursor-pointer shadow-[0_0_10px_rgba(0,255,204,0.15)]">
+                                    Configurar Bot en Servidor
+                                </button>
+                            ` : `
+                                <a href="https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=8&scope=bot&guild_id=${guild.id}" target="_blank" class="w-full py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron text-[10px] font-bold rounded-xl transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(88,101,242,0.4)] cursor-pointer">
+                                    <i class="fa-solid fa-plus"></i><span>Añadir Bot a este Servidor</span>
+                                </a>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openServerConfig(guildId, guildName) {
+            alert(`Abriendo panel de configuración para el servidor: "${guildName}"`);
+        }
+
+        function switchTab(tabId) {
+            if (tabId === 'devzone' && !isDevAuthenticated) {
+                openDevModal();
+                return;
+            }
+
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('tab-animate');
+            });
+            const target = document.getElementById(`tab-${tabId}`);
+            if (target) {
+                target.classList.remove('hidden');
+                target.classList.add('tab-animate');
+            }
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active-nav-glow');
+                if (btn.getAttribute('data-target') === tabId) {
+                    btn.classList.add('active-nav-glow');
+                }
+            });
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        switchTab('lobby');
+        if (devAccessLocked) hideDevPasswordAccess();
+
+        function submitOnEnter(event, action) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            action();
+        }
+
+        function acceptAllCookies() {
+            localStorage.setItem('obi_cookie_consent', 'all');
+            document.getElementById('cookie-banner').classList.add('hidden');
+        }
+
+        function rejectNonEssentialCookies() {
+            localStorage.setItem('obi_cookie_consent', 'essential');
+            document.getElementById('cookie-banner').classList.add('hidden');
+        }
+
+        function openCookieSettings() {
+            document.getElementById('cookie-settings-modal').classList.remove('hidden');
+        }
+
+        function closeCookieSettings() {
+            document.getElementById('cookie-settings-modal').classList.add('hidden');
+        }
+
+        function saveCustomCookiePreferences() {
+            localStorage.setItem('obi_cookie_consent', 'essential');
+            closeCookieSettings();
+            document.getElementById('cookie-banner').classList.add('hidden');
+            alert('¡Preferencias de cookies guardadas de forma segura!');
+        }
+
+        function sanitizeInput(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function registerNewBot() {
+            if (!isDevAuthenticated) return;
+            const name = sanitizeInput(document.getElementById('new-bot-name').value.trim());
+            const desc = sanitizeInput(document.getElementById('new-bot-desc').value.trim());
+            const avatar = sanitizeInput(document.getElementById('new-bot-avatar').value.trim());
+
+            if (!name || !desc) {
+                alert('Introduce al menos el nombre y la descripción.');
+                return;
+            }
+            alert('¡Bot añadido al sistema con éxito!');
+            document.getElementById('new-bot-name').value = '';
+            document.getElementById('new-bot-desc').value = '';
+            document.getElementById('new-bot-avatar').value = '';
+            logDevConsole(`[BOT] Bot registrado: "${name}"`);
+        }
+
+        function saveEnvironmentConfig() {
+            if (!isDevAuthenticated) return;
+            const token = document.getElementById('env-discord-token').value.trim();
+            const dbKey = document.getElementById('env-db-key').value.trim();
+            if(!token && !dbKey) return alert('Introduce algún valor.');
+            
+            try {
+                localStorage.setItem('obi_env_token_secure', secureHashEncode(token));
+                localStorage.setItem('obi_env_db_secure', secureHashEncode(dbKey));
+                document.getElementById('env-discord-token').value = '';
+                document.getElementById('env-db-key').value = '';
+                logDevConsole('[ENV] Claves guardadas con cifrado seguro.');
+                alert('¡Claves guardadas y cifradas en el navegador!');
+            } catch(e) {
+                alert('Error al guardar en el almacenamiento local (espacio excedido).');
+            }
+        }
+
+        let isMaintenanceActive = false;
+        function toggleMaintenanceMode() {
+            if (!isDevAuthenticated) return;
+            isMaintenanceActive = !isMaintenanceActive;
+            const statusEl = document.getElementById('maintenance-status');
+            const btnEl = document.getElementById('maintenance-btn');
+            if (isMaintenanceActive) {
+                statusEl.innerText = 'Activado';
+                statusEl.className = 'text-xs font-orbitron font-bold text-red-400';
+                btnEl.innerText = 'Desactivar';
+                logDevConsole('[SYSTEM] ¡MODO MANTENIMIENTO ACTIVADO!');
+            } else {
+                statusEl.innerText = 'Desactivado';
+                statusEl.className = 'text-xs font-orbitron font-bold text-emerald-400';
+                btnEl.innerText = 'Activar';
+                logDevConsole('[SYSTEM] Modo mantenimiento desactivado.');
+            }
+        }
+
+        function sendGlobalBroadcast() {
+            if (!isDevAuthenticated) return;
+            const msg = sanitizeInput(document.getElementById('broadcast-msg-input').value.trim());
+            if (!msg) return alert('Escribe un mensaje.');
+            logDevConsole(`[BROADCAST] "${msg}"`);
+            alert(`📢 ANUNCIO GLOBAL:\n\n"${msg}"`);
+            document.getElementById('broadcast-msg-input').value = '';
+        }
+
+        function setTerminalMode(mode) {
+            if (!isDevAuthenticated) return;
+            const consoleEl = document.getElementById('dev-console');
+            consoleEl.className = "bg-black/90 rounded-2xl p-4 font-mono text-xs space-y-1.5 h-48 overflow-y-auto shadow-inner border transition-all duration-300 ";
+            if (mode === 'classic') consoleEl.classList.add('border-emerald-500/60', 'text-emerald-400');
+            else if (mode === 'matrix') consoleEl.classList.add('border-green-400/60', 'text-green-300', 'bg-[#011405]');
+            else if (mode === 'cyberpunk') consoleEl.classList.add('border-[#00ffcc]/60', 'text-[#00ffcc]', 'bg-[#030d14]');
+            else if (mode === 'alert') consoleEl.classList.add('border-red-500/60', 'text-red-400', 'bg-[#140303]');
+            logDevConsole(`[TERMINAL] Modo cambiado a: ${mode}`);
+        }
+
+        function openDevModal() {
+            if (isDevAuthenticated) {
+                switchTab('devzone');
+                return;
+            }
+            if (devAccessLocked) {
+                hideDevPasswordAccess();
+                return;
+            }
+            document.getElementById('dev-modal').classList.remove('hidden');
+            document.getElementById('dev-password-input').value = '';
+            document.getElementById('dev-error-msg').classList.add('hidden');
+            document.getElementById('dev-attempts-msg').classList.remove('hidden');
+            document.getElementById('dev-attempts-msg').innerText = `Intentos restantes: ${5 - devFailedAttempts}`;
+        }
+
+        function closeDevModal() {
+            document.getElementById('dev-modal').classList.add('hidden');
+        }
+
+        async function verifyDevPassword() {
+            if (devAccessLocked) {
+                hideDevPasswordAccess();
+                return;
+            }
+            const pwdInput = document.getElementById('dev-password-input').value.trim();
+
+            try {
+                const response = await fetch(apiUrl('/api/dev/login'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ password: pwdInput })
+                });
+                const result = await response.json();
+                if (!response.ok) throw result;
+
+                isDevAuthenticated = true;
+                devFailedAttempts = 0;
+                localStorage.removeItem('obi_dev_failed_attempts');
+                closeDevModal();
+                switchTab('devzone');
+                document.getElementById('dev-lock-icon').classList.add('authenticated');
+                document.getElementById('mobile-dev-tab-btn').classList.remove('hidden');
+                updateSupportBannerUploader();
+                connectDiscordBotLogs();
+                logDevConsole('[AUTH] Acceso DEV autorizado correctamente.');
+                recordDevSecurityEvent('login_success');
+            } catch (result) {
+                devFailedAttempts = Number(result.attempts || devFailedAttempts + 1);
+                localStorage.setItem('obi_dev_failed_attempts', String(devFailedAttempts));
+                recordDevSecurityEvent('login_failed', { attempts: devFailedAttempts });
+                const errorEl = document.getElementById('dev-error-msg');
+                const attemptsEl = document.getElementById('dev-attempts-msg');
+                errorEl.classList.remove('hidden');
+                attemptsEl.classList.remove('hidden');
+                if (result.locked || devFailedAttempts >= 5) {
+                    devAccessLocked = true;
+                    localStorage.setItem('obi_dev_access_locked', 'true');
+                    errorEl.innerText = 'Se alcanzó el máximo de 5 intentos. El acceso DEV ha sido bloqueado.';
+                    attemptsEl.classList.add('hidden');
+                    alert('Se alcanzó el máximo de 5 intentos. La zona de contraseña DEV desaparecerá y el intento quedará registrado.');
+                    hideDevPasswordAccess();
+                    recordDevSecurityEvent('access_locked', { attempts: devFailedAttempts });
+                } else {
+                    errorEl.innerText = result.error || 'Contraseña incorrecta.';
+                    attemptsEl.innerText = `Aviso: te quedan ${5 - devFailedAttempts} intentos.`;
+                }
+                logDevConsole('[AUTH_FAIL] Intento de acceso DEV fallido.');
+            }
+        }
+
+        function hideDevPasswordAccess() {
+            closeDevModal();
+            document.getElementById('dev-trigger-btn').classList.add('hidden');
+            document.getElementById('mobile-dev-tab-btn').classList.add('hidden');
+        }
+
+        function recordDevSecurityEvent(type, details = {}) {
+            const event = {
+                type,
+                details,
+                timestamp: new Date().toISOString()
+            };
+            const storedEvents = JSON.parse(localStorage.getItem('obi_dev_security_logs') || '[]');
+            storedEvents.push(event);
+            localStorage.setItem('obi_dev_security_logs', JSON.stringify(storedEvents.slice(-100)));
+
+            fetch(apiUrl('/api/dev/security-logs'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(event)
+            }).catch(() => {
+                // El registro local queda como respaldo mientras no exista el backend.
+            });
+        }
+
+        function lockDevZone() {
+            isDevAuthenticated = false;
+            switchTab('lobby');
+            document.getElementById('dev-lock-icon').classList.remove('authenticated');
+            document.getElementById('mobile-dev-tab-btn').classList.add('hidden');
+            updateSupportBannerUploader();
+            disconnectDiscordBotLogs();
+            logDevConsole('[AUTH] Sesión DEV bloqueada.');
+        }
+
+        function handleImageUpload(event, storageKey, imgElementId) {
+            if (!isDevAuthenticated) return;
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                try {
+                    localStorage.setItem(storageKey, dataUrl);
+                    const imgEl = document.getElementById(imgElementId);
+                    if (imgEl) imgEl.src = dataUrl;
+                    logDevConsole(`[IMAGE] Archivo guardado en ${storageKey}`);
+                    alert('¡Imagen guardada correctamente!');
+                } catch(err) {
+                    alert('⚠️ Error: La imagen es demasiado pesada para el almacenamiento local del navegador.');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveUrlImage(inputId, storageKey, imgElementId) {
+            if (!isDevAuthenticated) return;
+            const url = sanitizeInput(document.getElementById(inputId).value.trim());
+            if (!url) return alert('Introduce un enlace válido.');
+            try {
+                localStorage.setItem(storageKey, url);
+                const imgEl = document.getElementById(imgElementId);
+                if (imgEl) imgEl.src = url;
+                document.getElementById(inputId).value = '';
+                logDevConsole(`[IMAGE] URL guardada en ${storageKey}`);
+                alert('¡Enlace guardado!');
+            } catch(err) {
+                alert('Error al guardar el enlace en el almacenamiento local.');
+            }
+        }
+
+        function handleSupportBannerUpload(event) {
+            if (!isDevAuthenticated) {
+                event.target.value = '';
+                alert('Inicia sesión en DEV para subir el banner.');
+                return;
+            }
+
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                try {
+                    localStorage.setItem('obi_support_banner', dataUrl);
+                    document.getElementById('support-banner-preview').src = dataUrl;
+                    document.getElementById('support-banner-preview-wrapper').classList.remove('hidden');
+                } catch (error) {
+                    alert('El banner es demasiado pesado para guardarlo en este navegador.');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateSupportBannerUploader() {
+            const uploader = document.getElementById('support-banner-uploader');
+            const input = document.getElementById('support-banner-file');
+            const title = document.getElementById('support-banner-uploader-title');
+            if (!uploader || !input || !title) return;
+
+            input.disabled = !isDevAuthenticated;
+            uploader.classList.toggle('opacity-50', !isDevAuthenticated);
+            uploader.classList.toggle('cursor-not-allowed', !isDevAuthenticated);
+            uploader.classList.toggle('cursor-pointer', isDevAuthenticated);
+            title.innerText = isDevAuthenticated
+                ? 'Elegir banner desde mis archivos'
+                : 'Inicia sesión DEV para subir un banner';
+        }
+
+        function setDiscordBotConnection(status, message, color) {
+            const connectionEl = document.getElementById('discord-bot-connection');
+            if (!connectionEl) return;
+            connectionEl.className = `inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border ${color}`;
+            connectionEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-current animate-pulse"></span>${message}`;
+            connectionEl.dataset.status = status;
+        }
+
+        function appendBotLog(message, tone = 'text-emerald-300') {
+            const logsEl = document.getElementById('bot-live-logs');
+            if (!logsEl) return;
+            const line = document.createElement('div');
+            line.className = tone;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsEl.appendChild(line);
+            logsEl.scrollTop = logsEl.scrollHeight;
+        }
+
+        function appendBotTerminal(message, tone = 'text-gray-300') {
+            const terminalEl = document.getElementById('bot-terminal-output');
+            if (!terminalEl) return;
+            const line = document.createElement('div');
+            line.className = tone;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            terminalEl.appendChild(line);
+            terminalEl.scrollTop = terminalEl.scrollHeight;
+        }
+
+        function connectDiscordBotLogs() {
+            if (!isDevAuthenticated || typeof EventSource === 'undefined') return;
+            disconnectDiscordBotLogs();
+            setDiscordBotConnection('connecting', 'CONECTANDO...', 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300 text-[10px] font-orbitron font-bold');
+            discordBotLogStream = new EventSource(`${DISCORD_BOT_API_BASE}/logs`, { withCredentials: true });
+            discordBotLogStream.onopen = () => {
+                setDiscordBotConnection('connected', 'BOT CONECTADO', 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-[10px] font-orbitron font-bold');
+                appendBotLog('Conexión de logs establecida.');
+            };
+            discordBotLogStream.onmessage = event => {
+                try {
+                    const payload = JSON.parse(event.data);
+                    appendBotLog(payload.message || event.data, payload.level === 'error' ? 'text-red-300' : 'text-emerald-300');
+                } catch (error) {
+                    appendBotLog(event.data);
+                }
+            };
+            discordBotLogStream.onerror = () => {
+                setDiscordBotConnection('error', 'BACKEND SIN CONECTAR', 'border-red-500/40 bg-red-500/10 text-red-300 text-[10px] font-orbitron font-bold');
+                appendBotLog('No se pudo conectar con el stream de logs.', 'text-red-300');
+            };
+        }
+
+        function disconnectDiscordBotLogs() {
+            if (!discordBotLogStream) return;
+            discordBotLogStream.close();
+            discordBotLogStream = null;
+        }
+
+        async function runBotCommand() {
+            if (!isDevAuthenticated) {
+                appendBotTerminal('Acceso denegado: inicia sesión DEV.', 'text-red-300');
+                return;
+            }
+
+            const input = document.getElementById('bot-command-input');
+            const command = input.value.trim();
+            if (!command) return;
+
+            appendBotTerminal(`$ ${command}`, 'text-[#00ffcc]');
+            input.value = '';
+
+            try {
+                const response = await fetch(`${DISCORD_BOT_API_BASE}/commands`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ command })
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+                appendBotTerminal(payload.output || 'Comando enviado al bot.', 'text-emerald-300');
+            } catch (error) {
+                appendBotTerminal(`No disponible: ${error.message}. Configura el backend Discord.`, 'text-red-300');
+            }
+        }
+
+        function clearBotLiveLogs() {
+            const logsEl = document.getElementById('bot-live-logs');
+            if (logsEl) logsEl.innerHTML = '<div class="text-gray-500">[SYSTEM] Logs limpiados.</div>';
+        }
+
+        function logDevConsole(text) {
+            const consoleEl = document.getElementById('dev-console');
+            if (!consoleEl) return;
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = "text-gray-300";
+            div.innerHTML = `<span class="text-gray-500">[${time}]</span> ${text}`;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+    </script>
+</body>
+</html>

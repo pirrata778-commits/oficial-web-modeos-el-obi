@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: modeos-el-obi
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUBLIC_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DEV_PASSWORD
+        sync: false
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/data/modeos.sqlite
+    disk:
+      name: modeos-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
