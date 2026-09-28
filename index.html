@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="api-base-url" content="">
+    <meta name="api-base-url" content="https://web-modeos-el-obi-backend.onrender.com">
     <title>MODEOS EL OBI | Cyberpunk Platform</title>
     <link rel="stylesheet" href="cookies.css">
     <script src="cookies.js" defer></script>
@@ -502,7 +502,7 @@
     <script>
         const configuredApiBase = document.querySelector('meta[name="api-base-url"]').content.trim();
         const isStandalonePreview = window.location.protocol === 'file:' || window.location.hostname.endsWith('.github.io');
-        const API_URL = (configuredApiBase || (isStandalonePreview ? 'https://web-modeos-el-obi.onrender.com' : window.location.origin)).replace(/\/$/, '');
+        const API_URL = (configuredApiBase || (isStandalonePreview ? 'https://web-modeos-el-obi-backend.onrender.com' : window.location.origin)).replace(/\/$/, '');
         let currentUser = null;
         let isDevUnlocked = false;
         let devLogStream = null;

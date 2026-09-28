@@ -26,7 +26,9 @@ if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || !pro
   console.warn('[CONFIG] OAuth o bot de Discord todavía no están configurados.');
 }
 
-const database = new Pool({ connectionString: process.env.DATABASE_URL });
+const databaseUrl = new URL(process.env.DATABASE_URL);
+databaseUrl.searchParams.set('sslmode', 'verify-full');
+const database = new Pool({ connectionString: databaseUrl.toString() });
 await database.query(`
   CREATE TABLE IF NOT EXISTS security_logs (
     id BIGSERIAL PRIMARY KEY,
