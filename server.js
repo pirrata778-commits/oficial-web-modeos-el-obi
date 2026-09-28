@@ -14,6 +14,8 @@ const port = Number(process.env.PORT || 3000);
 const publicUrl = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
 const frontendUrl = process.env.FRONTEND_URL || publicUrl;
 const { Pool } = pg;
+const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
+const maxSiteImageBytes = 2 * 1024 * 1024;
 
 if (!process.env.SESSION_SECRET || !process.env.DEV_PASSWORD || !process.env.DATABASE_URL) {
   throw new Error('Faltan SESSION_SECRET, DEV_PASSWORD o DATABASE_URL en .env');
@@ -37,6 +39,13 @@ await database.query(`
     locked BOOLEAN NOT NULL DEFAULT FALSE,
     updated_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS site_images (
+    slot TEXT PRIMARY KEY,
+    mime_type TEXT NOT NULL,
+    image_data BYTEA NOT NULL,
+    alt_text TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL
+  );
 `);
 
 const app = express();
@@ -49,7 +58,7 @@ app.use((request, response, next) => {
     response.setHeader('Access-Control-Allow-Origin', origin);
     response.setHeader('Access-Control-Allow-Credentials', 'true');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    response.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    response.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   }
   if (request.method === 'OPTIONS') return response.sendStatus(204);
   next();
@@ -64,7 +73,7 @@ async function logSecurity(type, request, details = {}) {
     'INSERT INTO security_logs (type, ip, details, created_at) VALUES ($1, $2, $3, $4)',
     [type, request.ip, JSON.stringify(details), event.timestamp]
   );
-  const payload = `event: security\\ndata: ${JSON.stringify(event)}\\n\\n`;
+  const payload = `event: security\ndata: ${JSON.stringify(event)}\n\n`;
   for (const response of devLogClients) response.write(payload);
   return event;
 }
@@ -79,7 +88,11 @@ function requireDiscordUser(request, response, next) {
   next();
 }
 
-app.use(express.json({ limit: '100kb' }));
+function asyncRoute(handler) {
+  return (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
+}
+
+app.use(express.json({ limit: '3mb' }));
 app.use(session({
   name: 'modeos.sid',
   secret: process.env.SESSION_SECRET,
@@ -137,11 +150,102 @@ app.get('/api/discord/guilds', requireDiscordUser, (request, response) => {
 });
 app.get('/api/config', (_request, response) => response.json({ discordClientId: process.env.DISCORD_CLIENT_ID || null }));
 
-app.post('/api/dev/login', async (request, response) => {
+function siteImageUrl(slot, updatedAt) {
+  return `/api/site-images/${slot}?v=${encodeURIComponent(updatedAt)}`;
+}
+
+function hasValidImageSignature(mimeType, imageData) {
+  if (mimeType === 'image/png') {
+    return imageData.length >= 8 && imageData.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'));
+  }
+  if (mimeType === 'image/jpeg') {
+    return imageData.length >= 3 && imageData[0] === 0xff && imageData[1] === 0xd8 && imageData[2] === 0xff;
+  }
+  return mimeType === 'image/webp'
+    && imageData.length >= 12
+    && imageData.toString('ascii', 0, 4) === 'RIFF'
+    && imageData.toString('ascii', 8, 12) === 'WEBP';
+}
+
+app.get('/api/site-images', asyncRoute(async (_request, response) => {
+  const { rows } = await database.query(
+    'SELECT slot, alt_text, updated_at FROM site_images WHERE slot = ANY($1)',
+    [Array.from(siteImageSlots)]
+  );
+  response.json(rows.map(image => ({
+    slot: image.slot,
+    alt: image.alt_text,
+    updatedAt: image.updated_at,
+    url: siteImageUrl(image.slot, image.updated_at)
+  })));
+});
+  app.get('/api/site-images/:slot', asyncRoute(async (request, response) => {
+app.get('/api/site-images/:slot', async (request, response) => {
+  if (!siteImageSlots.has(request.params.slot)) return response.status(404).json({ error: 'Ubicación de imagen inexistente.' });
+  const { rows } = await database.query(
+    'SELECT mime_type, image_data FROM site_images WHERE slot = $1',
+    [request.params.slot]
+  );
+  if (!rows[0]) return response.status(404).json({ error: 'No hay ninguna imagen publicada en esta ubicación.' });
+  response.setHeader('Content-Type', rows[0].mime_type);
+  response.setHeader('Cache-Control', 'public, max-age=300');
+  response.setHeader('X-Content-Type-Options', 'nosniff');
+  response.send(rows[0].image_data);
+}));
+
+app.put('/api/dev/images/:slot', requireDev, asyncRoute(async (request, response) => {
+  const { slot } = request.params;
+  if (!siteImageSlots.has(slot)) return response.status(404).json({ error: 'Ubicación de imagen inexistente.' });
+
+  const dataUrl = request.body?.image;
+  const match = typeof dataUrl === 'string'
+    ? /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl)
+    : null;
+  if (!match || match[2].length > Math.ceil(maxSiteImageBytes * 4 / 3) + 4) {
+    return response.status(400).json({ error: 'Envía una imagen PNG, JPEG o WebP válida.' });
+  }
+
+  const imageData = Buffer.from(match[2], 'base64');
+  if (imageData.length === 0 || imageData.length > maxSiteImageBytes || !hasValidImageSignature(match[1], imageData)) {
+    return response.status(400).json({ error: 'La imagen no es válida o supera el límite de 2 MB.' });
+  }
+
+  const altText = typeof request.body?.alt === 'string' ? request.body.alt.trim().slice(0, 160) : '';
+  const updatedAt = now();
+  await database.query(`
+    INSERT INTO site_images (slot, mime_type, image_data, alt_text, updated_at)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT(slot) DO UPDATE SET
+      mime_type = EXCLUDED.mime_type,
+      image_data = EXCLUDED.image_data,
+      alt_text = EXCLUDED.alt_text,
+      updated_at = EXCLUDED.updated_at
+  `, [slot, match[1], imageData, altText, updatedAt]);
+  await logSecurity('site_image_updated', request, { slot, mimeType: match[1], bytes: imageData.length });
+  response.json({ slot, alt: altText, updatedAt, url: siteImageUrl(slot, updatedAt) });
+}));
+
+app.delete('/api/dev/images/:slot', requireDev, asyncRoute(async (request, response) => {
+  const { slot } = request.params;
+  if (!siteImageSlots.has(slot)) return response.status(404).json({ error: 'Ubicación de imagen inexistente.' });
+  const result = await database.query('DELETE FROM site_images WHERE slot = $1', [slot]);
+  if (result.rowCount === 0) return response.status(404).json({ error: 'No hay ninguna imagen para retirar.' });
+  await logSecurity('site_image_removed', request, { slot });
+  response.json({ ok: true, slot });
+}));
+
+app.post('/api/dev/login', asyncRoute(async (request, response) => {
   const { password } = request.body || {};
   const { rows } = await database.query('SELECT * FROM dev_attempts WHERE session_id = $1', [request.sessionID]);
-  const existing = rows[0];
-  if (existing?.locked) return response.status(423).json({ error: 'Acceso DEV bloqueado.', locked: true });
+  let existing = rows[0];
+  if (existing?.locked) {
+    const lockExpiresAt = Date.parse(existing.updated_at) + 5 * 60 * 1000;
+    if (Number.isFinite(lockExpiresAt) && lockExpiresAt > Date.now()) {
+      return response.status(423).json({ error: 'Acceso DEV bloqueado temporalmente.', locked: true, retryAfter: Math.ceil((lockExpiresAt - Date.now()) / 1000) });
+    }
+    await database.query('UPDATE dev_attempts SET failed_attempts = 0, locked = FALSE, updated_at = $2 WHERE session_id = $1', [request.sessionID, now()]);
+    existing = { failed_attempts: 0, locked: false };
+  }
   if (password !== process.env.DEV_PASSWORD) {
     const failedAttempts = (existing?.failed_attempts || 0) + 1;
     const locked = failedAttempts >= 5;
@@ -156,34 +260,49 @@ app.post('/api/dev/login', async (request, response) => {
     await logSecurity(locked ? 'access_locked' : 'login_failed', request, { attempts: failedAttempts });
     return response.status(401).json({ error: locked ? 'Máximo de intentos alcanzado.' : 'Contraseña incorrecta.', attemptsRemaining: Math.max(0, 5 - failedAttempts), locked: Boolean(locked) });
   }
+  await database.query('UPDATE dev_attempts SET failed_attempts = 0, locked = FALSE, updated_at = $2 WHERE session_id = $1', [request.sessionID, now()]);
   request.session.devAuthenticated = true;
   await logSecurity('login_success', request);
   response.json({ ok: true });
-});
+}));
 
-app.post('/api/dev/logout', requireDev, async (request, response) => {
+app.post('/api/dev/logout', requireDev, asyncRoute(async (request, response) => {
   request.session.devAuthenticated = false;
   await logSecurity('logout', request);
   response.json({ ok: true });
+}));
+
+app.get('/api/dev/status', requireDev, (_request, response) => {
+  const ready = bot.isReady();
+  response.json({
+    ready,
+    username: ready ? bot.user.tag : null,
+    ping: ready ? bot.ws.ping : null,
+    guildCount: ready ? bot.guilds.cache.size : 0
+  });
 });
 
-app.post('/api/dev/security-logs', requireDev, async (request, response) => {
+app.post('/api/dev/security-logs', requireDev, asyncRoute(async (request, response) => {
   await logSecurity(request.body?.type || 'client_event', request, request.body?.details || {});
   response.status(201).json({ ok: true });
-});
+}));
 
 app.get('/api/discord/logs', requireDev, (request, response) => {
   response.setHeader('Content-Type', 'text/event-stream');
   response.setHeader('Cache-Control', 'no-cache');
   response.setHeader('Connection', 'keep-alive');
   response.flushHeaders();
-  response.write(`data: ${JSON.stringify({ message: 'Stream de Discord conectado.' })}\\n\\n`);
+  response.write(`data: ${JSON.stringify({ message: 'Stream de Discord conectado.', timestamp: now() })}\n\n`);
+  const heartbeat = setInterval(() => response.write(': keep-alive\n\n'), 20000);
   devLogClients.add(response);
-  request.on('close', () => devLogClients.delete(response));
+  request.on('close', () => {
+    clearInterval(heartbeat);
+    devLogClients.delete(response);
+  });
 });
 
 function sendBotLog(message, level = 'info') {
-  const payload = `data: ${JSON.stringify({ message, level, timestamp: now() })}\\n\\n`;
+  const payload = `data: ${JSON.stringify({ message, level, timestamp: now() })}\n\n`;
   for (const response of devLogClients) response.write(payload);
 }
 
@@ -195,20 +314,32 @@ bot.on(Events.MessageCreate, message => {
   sendBotLog(`${message.guild?.name || 'DM'} / ${message.author.tag}: ${message.content}`);
 });
 
-app.post('/api/discord/commands', requireDev, async (request, response) => {
+app.post('/api/discord/commands', requireDev, asyncRoute(async (request, response) => {
   const command = String(request.body?.command || '').trim();
   if (!command) return response.status(400).json({ error: 'Comando vacío.' });
   try {
     if (!bot.isReady()) return response.status(503).json({ error: 'El bot todavía no está conectado.' });
-    if (command === '!ping') return response.json({ output: `Pong: ${bot.ws.ping}ms` });
-    if (command === '!status') return response.json({ output: `Bot conectado en ${bot.guilds.cache.size} servidores.` });
-    if (command === '!guilds') return response.json({ output: bot.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join('\\n') || 'Sin servidores.' });
-    const sendMatch = command.match(/^!send\\s+(\\d+)\\s+([\\s\\S]+)$/);
+    if (command === '!ping') {
+      const output = `Pong: ${bot.ws.ping}ms`;
+      sendBotLog(`Comando !ping ejecutado: ${output}.`);
+      return response.json({ output });
+    }
+    if (command === '!status') {
+      const output = `Bot conectado como ${bot.user.tag} en ${bot.guilds.cache.size} servidores.`;
+      sendBotLog('Comando !status ejecutado.');
+      return response.json({ output });
+    }
+    if (command === '!guilds') {
+      const output = bot.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join('\n') || 'Sin servidores.';
+      sendBotLog('Comando !guilds ejecutado.');
+      return response.json({ output });
+    }
+    const sendMatch = command.match(/^!send\s+(\d+)\s+([\s\S]+)$/);
     if (sendMatch) {
       const channel = await bot.channels.fetch(sendMatch[1]);
       if (!channel?.isTextBased()) return response.status(400).json({ error: 'El canal no es de texto.' });
       await channel.send(sendMatch[2]);
-      sendBotLog(`Mensaje enviado al canal ${sendMatch[1]}.`);
+      sendBotLog(`Mensaje enviado al canal ${sendMatch[1]} por la consola DEV.`);
       return response.json({ output: 'Mensaje enviado correctamente.' });
     }
     return response.status(400).json({ error: 'Comando no permitido. Usa !ping, !status, !guilds o !send <channelId> <mensaje>.' });
@@ -216,9 +347,14 @@ app.post('/api/discord/commands', requireDev, async (request, response) => {
     sendBotLog(error.message, 'error');
     response.status(500).json({ error: error.message });
   }
-});
+}));
 
 app.use(express.static(__dirname));
+app.use((error, request, response, next) => {
+  console.error(`[API] ${request.method} ${request.path}`, error);
+  if (response.headersSent) return next(error);
+  response.status(500).json({ error: 'Error interno del servidor.' });
+});
 app.listen(port, () => console.log(`[WEB] MODEOS EL OBI disponible en ${publicUrl}`));
 
 if (process.env.DISCORD_BOT_TOKEN) bot.login(process.env.DISCORD_BOT_TOKEN).catch(error => console.error('[BOT]', error.message));
