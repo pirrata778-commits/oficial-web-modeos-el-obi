@@ -33,16 +33,16 @@ Las páginas legales contienen campos entre corchetes que debe completar y revis
 
 ## Despliegue en Render
 
-1. Crea o conserva un único **Web Service** de Render conectado a este repositorio, usando `render.yaml`.
+1. En Render, este repositorio debe estar desplegado como **Web Service** Node. El Blueprint de `render.yaml` lo nombra `web-modeos-el-obi` y comprueba `/api/health`.
 2. `npm start` inicia Express, que sirve `index.html`, los recursos estáticos y la API desde el mismo dominio. No crees un segundo Static Site para esta web.
-3. En el Web Service define `PUBLIC_URL` con su URL HTTPS pública y usa esa misma URL en `FRONTEND_URL`. Ejemplo: `https://modeos-el-obi.onrender.com`.
+3. En el Web Service define `PUBLIC_URL` con `https://web-modeos-el-obi.onrender.com` y usa esa misma URL en `FRONTEND_URL`.
 4. En Render, `index.html` detecta su propio origen como `API_URL`. Si alojas el frontend en otro dominio, configura el backend en `<meta name="api-base-url" content="https://TU-DOMINIO-BACKEND">`; las cookies entre dominios pueden bloquearse, por eso se recomienda el origen único.
 5. En Discord Developer Portal añade como redirect URI, usando el dominio exacto del Web Service:
-   `https://modeos-el-obi.onrender.com/auth/discord/callback`
+   `https://web-modeos-el-obi.onrender.com/auth/discord/callback`
 6. Completa en ese mismo servicio Render `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DEV_PASSWORD`, `SESSION_SECRET` y `DATABASE_URL`.
 7. El servicio usa el puerto asignado por Render automáticamente. PostgreSQL se conecta mediante `DATABASE_URL`; no se necesita disco persistente para la base de datos.
 
-Para verificar el despliegue, consulta `https://TU-DOMINIO-BACKEND/api/health`. Debe devolver `status: "ok"`, `database: "connected"` y el commit desplegado en `version`. Si devuelve `404`, Render no está sirviendo el backend actualizado o la URL configurada no corresponde al Web Service.
+Para verificar el despliegue, consulta `https://web-modeos-el-obi.onrender.com/api/health`. Debe devolver `status: "ok"`, `database: "connected"` y el commit desplegado en `version`. Si `/` carga la web pero `/api/health` da `404`, ese dominio sigue unido a un Static Site: elimina o reemplaza ese Static Site y crea el Web Service Node con este repositorio y `npm start`.
 
 La aplicación usa PostgreSQL en Neon para conservar los logs y los intentos de acceso al reiniciar o desplegar el servicio.
 Al arrancar, el backend crea si faltan las tablas `site_images`, `site_settings` y `site_messages`; no hay que ejecutar un SQL manualmente. El estado público se consulta en `/api/site-state`, y la Zona DEV lo modifica mediante `/api/dev/site-state` y `/api/dev/site-messages`. Las fotos existentes usan `/api/site-images` y `/api/dev/images/:slot`.
