@@ -178,9 +178,9 @@ app.get('/api/site-images', asyncRoute(async (_request, response) => {
     updatedAt: image.updated_at,
     url: siteImageUrl(image.slot, image.updated_at)
   })));
-});
-  app.get('/api/site-images/:slot', asyncRoute(async (request, response) => {
-app.get('/api/site-images/:slot', async (request, response) => {
+}));
+
+app.get('/api/site-images/:slot', asyncRoute(async (request, response) => {
   if (!siteImageSlots.has(request.params.slot)) return response.status(404).json({ error: 'Ubicación de imagen inexistente.' });
   const { rows } = await database.query(
     'SELECT mime_type, image_data FROM site_images WHERE slot = $1',
