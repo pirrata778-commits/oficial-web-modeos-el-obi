@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="api-base-url" content="">
     <title>MODEOS EL OBI | Cyberpunk Platform</title>
+    <link rel="stylesheet" href="cookies.css">
+    <script src="cookies.js" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -44,7 +46,7 @@
     <div id="beta-banner" class="w-full bg-gradient-to-r from-[#9d00ff]/30 via-[#5865F2]/30 to-[#00ffcc]/30 border-b border-[#00ffcc]/30 px-3 py-2 text-center text-[10px] sm:text-xs font-orbitron font-bold text-white flex items-center justify-between z-50 backdrop-blur-md">
         <div class="flex items-center justify-center space-x-1.5 flex-grow truncate px-1">
             <i class="fa-solid fa-triangle-exclamation text-yellow-400 animate-pulse shrink-0"></i>
-            <span class="truncate">Plataforma en fase <span class="text-[#00ffcc]">BETA</span>. Codificación y protección activa.</span>
+            <span class="truncate">Plataforma en fase <span class="text-[#00ffcc]">BETA</span>. En desarrollo continuo.</span>
         </div>
         <button onclick="closeBetaBanner()" class="text-gray-400 hover:text-white px-2 py-0.5 text-sm shrink-0"><i class="fa-solid fa-xmark"></i></button>
     </div>
@@ -59,7 +61,7 @@
             </div>
             <div>
                 <span class="font-orbitron font-black text-white text-xs sm:text-base tracking-wider block leading-tight">MODEOS <span class="text-[#00ffcc] glow-text">EL OBI</span></span>
-                <span class="text-[8px] sm:text-[9px] text-purple-400 font-orbitron font-bold uppercase tracking-widest block leading-tight">OS v2.6 ENCRYPTED</span>
+                <span class="text-[8px] sm:text-[9px] text-purple-400 font-orbitron font-bold uppercase tracking-widest block leading-tight">PLATAFORMA DE BOTS</span>
             </div>
         </div>
 
@@ -89,11 +91,24 @@
         </div>
     </nav>
 
-    <div class="w-full bg-[#05050b]/75 border-b border-white/5 px-4 sm:px-6 py-2 flex items-center justify-end gap-3 font-orbitron text-[10px] sm:text-xs" aria-label="Fecha y hora local">
+    <div class="w-full bg-[#05050b]/75 border-b border-white/5 px-4 sm:px-6 py-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 font-orbitron text-[10px] sm:text-xs" aria-label="Fecha y hora local">
         <time id="local-clock" class="text-[#00ffcc] tabular-nums">--:--:--</time>
         <span class="text-gray-600" aria-hidden="true">/</span>
         <time id="local-date" class="text-gray-300">Cargando fecha</time>
+        <span id="api-health-status" class="inline-flex items-center gap-1.5 text-gray-400" role="status" aria-live="polite" title="Comprobando conexión con el backend">
+            <span id="api-health-indicator" class="h-1.5 w-1.5 rounded-full bg-gray-500" aria-hidden="true"></span>
+            <span id="api-health-label">Comprobando API</span>
+        </span>
     </div>
+
+    <section id="maintenance-screen" class="hidden fixed inset-0 z-[100] bg-[#030308] cyber-grid flex-col items-center justify-center p-6 text-center" aria-live="assertive">
+        <div class="max-w-xl space-y-5">
+            <i class="fa-solid fa-screwdriver-wrench text-4xl text-[#00ffcc]" aria-hidden="true"></i>
+            <h1 class="font-orbitron text-2xl sm:text-4xl font-black text-white">Mantenimiento</h1>
+            <p id="maintenance-public-message" class="text-gray-300 text-sm sm:text-base"></p>
+            <button type="button" onclick="openDevModal()" class="px-4 py-2.5 border border-[#00ffcc]/40 text-[#00ffcc] rounded-xl text-xs font-orbitron">Acceso de administración</button>
+        </div>
+    </section>
 
     <!-- Navegación Móvil Inferior -->
     <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#05050b]/98 backdrop-blur-2xl border-t border-[#00ffcc]/20 px-1 py-2 flex justify-around items-center">
@@ -127,13 +142,13 @@
             <div class="glass-panel p-5 sm:p-12 rounded-3xl relative overflow-hidden space-y-5 border-[#00ffcc]/30 shadow-[0_0_40px_rgba(0,255,204,0.15)]">
                 <div class="absolute -right-20 -top-20 w-60 h-60 bg-[#9d00ff]/20 rounded-full blur-3xl pointer-events-none"></div>
                 <div class="inline-flex items-center space-x-2 px-3 py-1 bg-[#9d00ff]/20 border border-[#9d00ff]/50 text-purple-300 text-[10px] sm:text-xs font-orbitron font-bold tracking-widest uppercase rounded-full">
-                    <i class="fa-solid fa-file-shield text-[#00ffcc]"></i><span>Codificación de Seguridad Activa</span>
+                    <i class="fa-solid fa-cube text-[#00ffcc]"></i><span>Herramientas para Discord</span>
                 </div>
                 <h1 class="font-orbitron text-2xl sm:text-6xl font-black text-white tracking-tight glow-text leading-tight">
                     MODEOS <span class="text-[#00ffcc]">EL OBI</span>
                 </h1>
                 <p class="text-gray-300 text-xs sm:text-lg max-w-2xl leading-relaxed">
-                    El universo definitivo de bots, herramientas y tecnología con código cifrado, ofuscación avanzada y protección anti-copia.
+                    Bots de Discord, herramientas de desarrollo y recursos para la comunidad.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-3 pt-2">
                     <button onclick="switchTab('modelos')" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-[#9d00ff] to-purple-600 text-white font-orbitron font-bold text-xs rounded-2xl transition shadow-[0_0_20px_rgba(157,0,255,0.4)] flex items-center justify-center space-x-2">
@@ -154,9 +169,9 @@
                     <div class="w-10 h-10 rounded-2xl bg-[#9d00ff]/20 border border-[#9d00ff]/50 flex items-center justify-center text-[#00ffcc]">
                         <i class="fa-solid fa-microchip text-base"></i>
                     </div>
-                    <h3 class="font-orbitron font-bold text-white text-sm">Codificación Segura</h3>
+                    <h3 class="font-orbitron font-bold text-white text-sm">Herramientas para bots</h3>
                     <p class="text-gray-400 text-xs leading-relaxed">
-                        Algoritmos y scripts empaquetados bajo capas de ofuscación de nivel industrial.
+                        Recursos y utilidades para crear y administrar proyectos de Discord.
                     </p>
                 </div>
 
@@ -176,10 +191,40 @@
                     </div>
                     <h3 class="font-orbitron font-bold text-white text-sm">Bloqueo Inteligente</h3>
                     <p class="text-gray-400 text-xs leading-relaxed">
-                        Protección temporal de 5 minutos ante accesos fallidos en el panel de desarrollo.
+                        Bloqueo temporal de cinco minutos tras intentos fallidos de acceso DEV.
                     </p>
                 </div>
             </div>
+            <section class="glass-panel relative overflow-hidden rounded-2xl border-[#5865F2]/50 p-5 sm:p-7" aria-labelledby="discord-support-title">
+                <div class="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#5865F2]/15 blur-3xl pointer-events-none"></div>
+                <div class="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-4">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#5865F2]/50 bg-[#5865F2]/20 text-[#8f9bff]">
+                            <i class="fa-brands fa-discord text-2xl" aria-hidden="true"></i>
+                        </div>
+                        <div class="min-w-0 space-y-2">
+                            <div class="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold uppercase text-emerald-300">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true"></span>
+                                Comunidad disponible 24/7
+                            </div>
+                            <h2 id="discord-support-title" class="font-orbitron text-base font-bold text-white sm:text-xl">Soporte técnico en Discord</h2>
+                            <p class="max-w-2xl text-xs leading-relaxed text-gray-300 sm:text-sm">Consulta cómo pedir ayuda y conecta directamente con la comunidad de MODEOS EL OBI.</p>
+                        </div>
+                    </div>
+                    <a href="soporte.html" class="inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-[#7289da]/70 bg-[#5865F2]/15 px-5 py-3 text-center text-xs font-bold text-white transition hover:border-[#a8b2ff] hover:bg-[#5865F2]/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8b2ff] sm:w-auto sm:text-sm">
+                        <i class="fa-brands fa-discord text-base text-[#a8b2ff]" aria-hidden="true"></i>
+                        Ver soporte 24/7
+                        <i class="fa-solid fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </section>
+            <section class="space-y-3" aria-labelledby="site-messages-title">
+                <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                    <h2 id="site-messages-title" class="font-orbitron text-sm font-bold text-white">Avisos</h2>
+                    <span class="text-[10px] text-gray-500">Actualizaciones oficiales</span>
+                </div>
+                <ol id="public-site-messages" class="space-y-2" aria-live="polite"></ol>
+            </section>
         </section>
 
         <!-- MODELOS -->
@@ -282,6 +327,39 @@
                 </div>
                 <section class="space-y-4 border-t border-white/10 pt-5">
                     <div>
+                        <h3 class="font-orbitron text-sm font-bold text-white">Estado global</h3>
+                        <p class="text-xs text-gray-400 mt-1">Se guarda en Neon y se actualiza en las sesiones abiertas.</p>
+                    </div>
+                    <label class="flex items-center gap-3 text-sm text-white">
+                        <input id="maintenance-enabled" type="checkbox" class="h-5 w-5 accent-[#00ffcc]">
+                        <span>Activar modo mantenimiento</span>
+                    </label>
+                    <label class="block space-y-1 text-xs text-gray-300">
+                        <span>Mensaje del mantenimiento</span>
+                        <textarea id="maintenance-message" maxlength="500" rows="2" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">Estamos realizando tareas de mantenimiento.</textarea>
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <button id="save-site-state" type="button" onclick="saveSiteState()" class="px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs">Guardar estado</button>
+                        <span id="site-state-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                    </div>
+                </section>
+                <section class="space-y-4 border-t border-white/10 pt-5">
+                    <div>
+                        <h3 class="font-orbitron text-sm font-bold text-white">Mensajes públicos</h3>
+                        <p class="text-xs text-gray-400 mt-1">Los avisos publicados aparecen en Lobby para todas las visitas.</p>
+                    </div>
+                    <form id="site-message-form" class="space-y-2">
+                        <label for="site-message-input" class="sr-only">Escribe un aviso</label>
+                        <textarea id="site-message-input" maxlength="1000" rows="3" placeholder="Escribe un aviso para la web..." class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea>
+                        <div class="flex items-center gap-3">
+                            <button id="site-message-submit" type="submit" class="px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-paper-plane mr-1"></i>Publicar aviso</button>
+                            <span id="site-message-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                        </div>
+                    </form>
+                    <ol id="dev-site-messages" class="space-y-2"></ol>
+                </section>
+                <section class="space-y-4 border-t border-white/10 pt-5">
+                    <div>
                         <h3 class="font-orbitron text-sm font-bold text-white">Gestión de imágenes</h3>
                         <p class="text-xs text-gray-400 mt-1">Publica imágenes en la portada, Modelos o Directos. PNG, JPEG o WebP, máximo 2 MB.</p>
                     </div>
@@ -340,11 +418,75 @@
 
     <!-- Footer -->
     <footer class="mt-auto border-t border-[#00ffcc]/20 bg-[#05050b]/90 py-6 px-4 text-center text-[10px] sm:text-xs font-orbitron space-y-3 z-30">
-        <p class="text-white font-bold">MODEOS EL OBI SECURE &copy; 2026</p>
+        <p class="text-white font-bold">MODEOS EL OBI &copy; 2026</p>
+        <nav class="cookie-footer-links" aria-label="Información legal y privacidad">
+            <a href="privacy-policy.html">Privacidad</a>
+            <a href="terms.html">Términos</a>
+            <a href="cookies-policy.html">Cookies</a>
+            <button type="button" data-cookie-open>Configurar cookies</button>
+        </nav>
     </footer>
 
+    <section id="cookie-banner" class="cookie-banner" role="region" aria-label="Preferencias de cookies" hidden>
+        <div class="cookie-banner-copy">
+            <span class="cookie-eyebrow"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> PRIVACIDAD</span>
+            <h2>Tu privacidad, a tu manera</h2>
+            <p>Usamos almacenamiento esencial para recordar tu elección. La analítica y la personalización opcionales permanecen desactivadas hasta que las autorices.</p>
+            <a href="cookies-policy.html">Leer la política de cookies</a>
+        </div>
+        <div class="cookie-banner-actions">
+            <button type="button" class="cookie-button cookie-button-quiet" data-cookie-action="reject">Rechazar opcionales</button>
+            <button type="button" class="cookie-button cookie-button-secondary" data-cookie-action="configure">Configurar</button>
+            <button type="button" class="cookie-button cookie-button-primary" data-cookie-action="accept">Aceptar todas</button>
+        </div>
+    </section>
+
+    <div id="cookie-preferences" class="cookie-dialog-backdrop" role="presentation" hidden>
+        <section class="cookie-dialog" role="dialog" aria-modal="true" aria-labelledby="cookie-dialog-title" aria-describedby="cookie-dialog-description" tabindex="-1">
+            <header class="cookie-dialog-header">
+                <div>
+                    <span class="cookie-eyebrow">CENTRO DE PRIVACIDAD</span>
+                    <h2 id="cookie-dialog-title">Configuración avanzada</h2>
+                </div>
+                <button type="button" class="cookie-close" data-cookie-action="close" aria-label="Cerrar preferencias"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </header>
+            <p id="cookie-dialog-description" class="cookie-dialog-intro">Elige qué categorías opcionales autorizas. Puedes cambiar o retirar tu decisión cuando quieras desde el pie de página.</p>
+
+            <div class="cookie-category-list">
+                <article class="cookie-category">
+                    <div class="cookie-category-copy">
+                        <h3>Cookies esenciales</h3>
+                        <p>Necesarias para recordar tus preferencias y proteger las funciones solicitadas. Siempre activas; no se pueden deshabilitar.</p>
+                    </div>
+                    <span class="cookie-required">Obligatorias</span>
+                </article>
+                <article class="cookie-category">
+                    <div class="cookie-category-copy">
+                        <h3>Analítica y rendimiento</h3>
+                        <p>Permiten medir el uso y detectar errores para mejorar el servicio. No se activa ningún proveedor de analítica sin tu permiso.</p>
+                    </div>
+                    <button type="button" class="cookie-switch" role="switch" aria-checked="false" aria-label="Permitir cookies analíticas" data-cookie-toggle="analytics"><span></span></button>
+                </article>
+                <article class="cookie-category">
+                    <div class="cookie-category-copy">
+                        <h3>Personalización y preferencias</h3>
+                        <p>Recuerdan opciones no esenciales para adaptar la experiencia entre visitas.</p>
+                    </div>
+                    <button type="button" class="cookie-switch" role="switch" aria-checked="false" aria-label="Permitir cookies de personalización" data-cookie-toggle="personalization"><span></span></button>
+                </article>
+            </div>
+
+            <p class="cookie-vendor-note">Las preferencias se guardan en este navegador. La política describe los recursos externos que utiliza actualmente la web.</p>
+            <footer class="cookie-dialog-actions">
+                <button type="button" class="cookie-button cookie-button-quiet" data-cookie-action="reject">Rechazar opcionales</button>
+                <button type="button" class="cookie-button cookie-button-secondary" data-cookie-action="save">Guardar selección</button>
+                <button type="button" class="cookie-button cookie-button-primary" data-cookie-action="accept">Aceptar todas</button>
+            </footer>
+        </section>
+    </div>
+
     <!-- MODAL DEV -->
-    <div id="dev-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div id="dev-modal" class="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="glass-panel p-6 sm:p-8 rounded-3xl w-full max-w-sm space-y-5 border-[#9d00ff]/60">
             <div class="flex justify-between items-center">
                 <h3 class="font-orbitron text-lg font-bold text-white flex items-center"><i class="fa-solid fa-shield-halved text-[#9d00ff] mr-2"></i>Zona DEV</h3>
@@ -359,14 +501,17 @@
     <!-- Lógica de la plataforma -->
     <script>
         const configuredApiBase = document.querySelector('meta[name="api-base-url"]').content.trim();
-        const isGitHubPages = window.location.hostname.endsWith('.github.io');
-        const API_BASE_URL = (configuredApiBase || (isGitHubPages || window.location.protocol === 'file:'
-            ? 'https://modeos-el-obi.onrender.com'
-            : window.location.origin)).replace(/\/$/, '');
+        const API_URL = (configuredApiBase || 'https://modeos-el-obi.onrender.com').replace(/\/$/, '');
         let currentUser = null;
         let isDevUnlocked = false;
         let devLogStream = null;
+        let siteUpdateStream = null;
         let siteImages = [];
+        let siteState = {
+            maintenance: false,
+            maintenanceMessage: 'Estamos realizando tareas de mantenimiento.',
+            messages: []
+        };
 
         document.addEventListener('DOMContentLoaded', async () => {
             switchTab('lobby');
@@ -374,12 +519,15 @@
             setInterval(updateLocalClock, 1000);
             document.getElementById('dev-image-form').addEventListener('submit', handleSiteImageUpload);
             document.getElementById('dev-image-slot').addEventListener('change', updateImageDeleteButton);
-            await Promise.all([loadSession(), loadSiteImages()]);
+            document.getElementById('site-message-form').addEventListener('submit', publishSiteMessage);
+            await Promise.all([loadSession(), loadSiteImages(), loadSiteState(), loadApiHealth()]);
+            renderSiteState();
+            connectSiteUpdates();
             if (currentUser) await loadGuilds();
         });
 
         async function apiRequest(path, options = {}) {
-            const response = await fetch(`${API_BASE_URL}${path}`, {
+            const response = await fetch(`${API_URL}${path}`, {
                 ...options,
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json', ...options.headers }
@@ -406,6 +554,24 @@
             document.getElementById('local-date').dateTime = currentTime.toISOString();
         }
 
+        async function loadApiHealth() {
+            const label = document.getElementById('api-health-label');
+            const indicator = document.getElementById('api-health-indicator');
+            const status = document.getElementById('api-health-status');
+            try {
+                const health = await apiRequest('/api/health');
+                label.textContent = 'API conectada';
+                indicator.className = 'h-1.5 w-1.5 rounded-full bg-emerald-400';
+                status.className = 'inline-flex items-center gap-1.5 text-emerald-300';
+                status.title = `Backend ${health.version}; Neon ${health.database}`;
+            } catch (error) {
+                label.textContent = 'Backend no disponible';
+                indicator.className = 'h-1.5 w-1.5 rounded-full bg-red-400';
+                status.className = 'inline-flex items-center gap-1.5 text-red-300';
+                status.title = error.message;
+            }
+        }
+
         async function loadSiteImages() {
             try {
                 siteImages = await apiRequest('/api/site-images');
@@ -413,6 +579,145 @@
                 renderDevImageList();
             } catch (error) {
                 console.warn('No se pudieron cargar las imágenes publicadas:', error.message);
+            }
+        }
+
+        async function loadSiteState() {
+            try {
+                siteState = await apiRequest('/api/site-state');
+                renderSiteMessages();
+            } catch (error) {
+                console.warn('No se pudo cargar el estado publicado:', error.message);
+            }
+        }
+
+        function renderSiteState() {
+            document.getElementById('maintenance-enabled').checked = siteState.maintenance;
+            document.getElementById('maintenance-message').value = siteState.maintenanceMessage;
+            document.getElementById('maintenance-public-message').textContent = siteState.maintenanceMessage;
+            document.getElementById('maintenance-screen').classList.toggle('hidden', !siteState.maintenance || isDevUnlocked);
+            document.getElementById('maintenance-screen').classList.toggle('flex', siteState.maintenance && !isDevUnlocked);
+            renderSiteMessages();
+        }
+
+        function renderSiteMessages() {
+            renderMessageList(document.getElementById('public-site-messages'), false);
+            renderMessageList(document.getElementById('dev-site-messages'), true);
+        }
+
+        function renderMessageList(container, canDelete) {
+            container.replaceChildren();
+            if (!siteState.messages.length && !canDelete) {
+                const empty = document.createElement('li');
+                empty.className = 'text-xs text-gray-500';
+                empty.textContent = 'No hay avisos publicados.';
+                container.append(empty);
+                return;
+            }
+            siteState.messages.forEach(message => {
+                const item = document.createElement('li');
+                item.className = 'flex items-start justify-between gap-3 border border-white/10 bg-black/35 rounded-xl px-4 py-3';
+                const content = document.createElement('p');
+                content.className = 'min-w-0 flex-1 text-sm text-gray-200 whitespace-pre-wrap break-words';
+                content.textContent = message.content;
+                const actions = document.createElement('div');
+                actions.className = 'flex shrink-0 items-center gap-2';
+                const timestamp = document.createElement('time');
+                timestamp.className = 'text-[10px] text-gray-500';
+                timestamp.dateTime = message.created_at;
+                timestamp.textContent = new Date(message.created_at).toLocaleDateString('es-ES');
+                actions.append(timestamp);
+                if (canDelete) {
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.className = 'px-2 py-1 text-red-300 hover:text-white border border-red-400/30 rounded-lg';
+                    remove.title = 'Eliminar aviso';
+                    remove.setAttribute('aria-label', 'Eliminar aviso');
+                    remove.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i>';
+                    remove.addEventListener('click', () => deleteSiteMessage(message.message_id));
+                    actions.append(remove);
+                }
+                item.append(content, actions);
+                container.append(item);
+            });
+        }
+
+        function connectSiteUpdates() {
+            if (siteUpdateStream) return;
+            siteUpdateStream = new EventSource(`${API_URL}/api/site/updates`);
+            siteUpdateStream.onmessage = event => {
+                try {
+                    const update = JSON.parse(event.data);
+                    if (update.type === 'connected') {
+                        loadSiteState();
+                        return;
+                    }
+                    siteState = update;
+                    renderSiteState();
+                } catch (error) {
+                    console.error('No se pudo aplicar la actualización pública:', error);
+                }
+            };
+        }
+
+        async function saveSiteState() {
+            const button = document.getElementById('save-site-state');
+            const status = document.getElementById('site-state-status');
+            button.disabled = true;
+            status.textContent = 'Guardando en Neon...';
+            try {
+                const state = await apiRequest('/api/dev/site-state', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        maintenance: document.getElementById('maintenance-enabled').checked,
+                        maintenanceMessage: document.getElementById('maintenance-message').value
+                    })
+                });
+                siteState = state;
+                renderSiteState();
+                status.textContent = 'Estado global actualizado.';
+            } catch (error) {
+                status.textContent = `No se pudo guardar: ${error.message}`;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function publishSiteMessage(event) {
+            event.preventDefault();
+            const input = document.getElementById('site-message-input');
+            const button = document.getElementById('site-message-submit');
+            const status = document.getElementById('site-message-status');
+            const content = input.value.trim();
+            if (!content) {
+                status.textContent = 'Escribe el contenido del aviso.';
+                return;
+            }
+            button.disabled = true;
+            status.textContent = 'Publicando en Neon...';
+            try {
+                const result = await apiRequest('/api/dev/site-messages', {
+                    method: 'POST',
+                    body: JSON.stringify({ content })
+                });
+                siteState = result.state;
+                input.value = '';
+                renderSiteState();
+                status.textContent = 'Aviso publicado.';
+            } catch (error) {
+                status.textContent = `No se pudo publicar: ${error.message}`;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function deleteSiteMessage(messageId) {
+            try {
+                siteState = await apiRequest(`/api/dev/site-messages/${messageId}`, { method: 'DELETE' });
+                renderSiteState();
+                document.getElementById('site-message-status').textContent = 'Aviso eliminado.';
+            } catch (error) {
+                document.getElementById('site-message-status').textContent = `No se pudo eliminar: ${error.message}`;
             }
         }
 
@@ -427,7 +732,7 @@
                     placeholder.classList.remove('hidden');
                     return;
                 }
-                image.src = `${API_BASE_URL}${imageData.url}`;
+                image.src = `${API_URL}${imageData.url}`;
                 image.alt = imageData.alt || '';
                 image.classList.remove('hidden');
                 placeholder.classList.add('hidden');
@@ -442,7 +747,7 @@
                 const item = document.createElement('article');
                 item.className = 'overflow-hidden rounded-xl border border-white/10 bg-black/40';
                 const preview = document.createElement('img');
-                preview.src = `${API_BASE_URL}${imageData.url}`;
+                preview.src = `${API_URL}${imageData.url}`;
                 preview.alt = imageData.alt || '';
                 preview.className = 'w-full aspect-[16/7] object-cover';
                 const label = document.createElement('p');
@@ -516,7 +821,7 @@
         }
 
         function loginDiscord() {
-            window.location.href = `${API_BASE_URL}/auth/discord`;
+            window.location.href = `${API_URL}/auth/discord`;
         }
 
         async function loadSession() {
@@ -639,7 +944,7 @@
         function connectDevLogStream() {
             if (devLogStream) return;
             const streamState = document.getElementById('dev-stream-state');
-            devLogStream = new EventSource(`${API_BASE_URL}/api/discord/logs`, { withCredentials: true });
+            devLogStream = new EventSource(`${API_URL}/api/discord/logs`, { withCredentials: true });
             devLogStream.onopen = () => {
                 streamState.textContent = 'En vivo';
                 streamState.className = 'text-[10px] text-emerald-400';
@@ -694,6 +999,7 @@
                 closeDevModal();
                 input.value = '';
                 document.getElementById('mobile-dev-tab-btn').classList.remove('hidden');
+                renderSiteState();
                 switchTab('devzone');
             } catch (error) {
                 alert(error.message);
@@ -714,6 +1020,7 @@
                 devLogStream = null;
             }
             isDevUnlocked = false;
+            renderSiteState();
             document.getElementById('mobile-dev-tab-btn').classList.add('hidden');
             switchTab('lobby');
         }

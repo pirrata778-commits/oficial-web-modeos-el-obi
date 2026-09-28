@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Política de cookies y preferencias de MODEOS EL OBI.">
+    <title>Política de cookies | MODEOS EL OBI</title>
+    <link rel="stylesheet" href="cookies.css">
+    <script src="cookies.js" defer></script>
+</head>
+<body class="legal-page">
+    <header class="legal-header">
+        <a class="legal-brand" href="index.html">MODEOS EL OBI</a>
+        <a href="index.html">Volver a la web</a>
+    </header>
+    <main class="legal-document">
+        <span class="cookie-eyebrow">INFORMACIÓN LEGAL</span>
+        <h1>Política de cookies</h1>
+        <p class="legal-updated">Última actualización: [FECHA DE PUBLICACIÓN]</p>
+        <aside class="legal-template-notice"><strong>Revisión necesaria antes de publicar.</strong> Confirma el inventario real con herramientas de inspección de cookies y red en producción, y completa responsable, proveedores, finalidades, duración y base jurídica según la configuración final.</aside>
+
+        <h2>1. Qué son las cookies y tecnologías similares</h2>
+        <p>Las cookies son pequeños datos que un sitio puede almacenar en el navegador. Esta política también describe el almacenamiento local y las solicitudes a recursos externos que pueden revelar datos técnicos de conexión.</p>
+
+        <h2>2. Tecnologías utilizadas actualmente por el código</h2>
+        <ul>
+            <li><strong>Sesión de servidor:</strong> la cookie `modeos.sid` mantiene la sesión necesaria para Discord y la zona DEV. Está configurada como HTTP-only, con duración máxima de ocho horas y Secure en producción.</li>
+            <li><strong>Elección de privacidad:</strong> `localStorage` guarda `modeos-cookie-consent`, incluyendo categorías elegidas, versión y fecha/hora de decisión. Se usa para recordar la elección del banner.</li>
+            <li><strong>Analítica:</strong> esta versión no configura un proveedor de analítica ni publicidad. Las categorías opcionales se mantienen apagadas hasta que el usuario las autorice y solo se activarán si se añade un script registrado para esa categoría.</li>
+            <li><strong>Personalización:</strong> no hay actualmente un proveedor opcional de personalización configurado. La categoría se ofrece como control para integraciones futuras.</li>
+        </ul>
+        <p>Las tecnologías esenciales se usan para prestar una función solicitada, conservar la elección o proteger la sesión. Las opcionales requieren una decisión afirmativa cuando la ley lo exija.</p>
+
+        <h2>3. Recursos externos de interfaz</h2>
+        <p>La versión actual de `index.html` carga Tailwind CSS desde `cdn.tailwindcss.com` como script de interfaz y obtiene fuentes desde Google Fonts e iconos desde cdnjs/Font Awesome. Esas solicitudes se realizan al cargar la página, independientemente de las categorías opcionales, para representar la interfaz existente. Los proveedores pueden recibir datos técnicos como dirección IP, agente de usuario y URL solicitada. El código de la web no usa esos recursos como herramientas de analítica, pero el responsable debe revisar las condiciones de cada proveedor y sus transferencias.</p>
+        <p>Para reducir dependencias de terceros y solicitudes antes de la elección, compila y aloja localmente Tailwind, las fuentes y los iconos. No declares esos recursos como “cookies esenciales” sin verificar que esa clasificación sea correcta.</p>
+
+        <h2>4. Categorías y opciones</h2>
+        <ul>
+            <li><strong>Esenciales:</strong> necesarias para la sesión, seguridad y recuerdo de la elección. Permanecen activas.</li>
+            <li><strong>Analítica y rendimiento:</strong> desactivada por defecto. No se descarga ningún script registrado en esta categoría hasta una autorización afirmativa.</li>
+            <li><strong>Personalización y preferencias:</strong> desactivada por defecto. No se descarga ningún script registrado en esta categoría hasta una autorización afirmativa.</li>
+        </ul>
+
+        <h2>5. Cómo cambiar o retirar el consentimiento</h2>
+        <p>Usa “Configurar cookies” en el pie de la web para modificar la elección en cualquier momento. La nueva selección se guarda con una fecha/hora y se comunica a las integraciones mediante un evento. Los scripts que ya se hayan ejecutado pueden requerir instrucciones propias del proveedor para detener procesos y borrar identificadores; el responsable debe incorporar esa lógica antes de añadir cualquier proveedor opcional.</p>
+
+        <h2>6. Cómo eliminar datos almacenados</h2>
+        <p>Puedes borrar los datos del sitio desde la configuración del navegador. Esto elimina la elección guardada y el banner volverá a aparecer. La eliminación de la cookie de sesión puede cerrar la sesión del sitio. Borrar almacenamiento del navegador no elimina los datos que el servidor ya haya guardado en Neon; para ello contacta con <a href="mailto:[EMAIL DE PRIVACIDAD]">[EMAIL DE PRIVACIDAD]</a>.</p>
+
+        <h2>7. Responsable y contacto</h2>
+        <p>Responsable: <strong>[NOMBRE LEGAL O TITULAR]</strong>. Contacto: <a href="mailto:[EMAIL DE PRIVACIDAD]">[EMAIL DE PRIVACIDAD]</a>. Consulta también la <a href="privacy-policy.html">Política de privacidad</a> para conocer los derechos y destinatarios.</p>
+        <nav class="cookie-footer-links" aria-label="Otras políticas">
+            <a href="privacy-policy.html">Política de privacidad</a>
+            <a href="terms.html">Términos y condiciones</a>
+            <a href="index.html#cookie-settings" data-cookie-open>Configurar cookies</a>
+        </nav>
+    </main>
+</body>
+</html>

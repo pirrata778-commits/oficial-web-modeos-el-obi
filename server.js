@@ -12,13 +12,17 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 const publicUrl = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
-const frontendUrl = process.env.FRONTEND_URL || publicUrl;
+const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || null;
+const frontendOrigin = frontendUrl ? new URL(frontendUrl).origin : null;
 const { Pool } = pg;
 const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
 const maxSiteImageBytes = 2 * 1024 * 1024;
 
 if (!process.env.SESSION_SECRET || !process.env.DEV_PASSWORD || !process.env.DATABASE_URL) {
   throw new Error('Faltan SESSION_SECRET, DEV_PASSWORD o DATABASE_URL en .env');
+}
+if (process.env.NODE_ENV === 'production' && !frontendUrl) {
+  throw new Error('FRONTEND_URL debe ser el origen público del frontend en producción.');
 }
 if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || !process.env.DISCORD_BOT_TOKEN) {
   console.warn('[CONFIG] OAuth o bot de Discord todavía no están configurados.');
@@ -46,21 +50,43 @@ await database.query(`
     alt_text TEXT NOT NULL DEFAULT '',
     updated_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS site_settings (
+    setting_key TEXT PRIMARY KEY,
+    setting_value JSONB NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  CREATE TABLE IF NOT EXISTS site_messages (
+    message_id BIGSERIAL PRIMARY KEY,
+    content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 1000),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  INSERT INTO site_settings (setting_key, setting_value)
+  VALUES ('maintenance', 'false'::jsonb), ('maintenance_message', '"Estamos realizando tareas de mantenimiento."'::jsonb)
+  ON CONFLICT (setting_key) DO NOTHING;
 `);
 
 const app = express();
 app.set('trust proxy', 1);
 const devLogClients = new Set();
+const siteUpdateClients = new Set();
 
 app.use((request, response, next) => {
   const origin = request.headers.origin;
-  if (origin === frontendUrl || origin === publicUrl) {
-    response.setHeader('Access-Control-Allow-Origin', origin);
+  const isApiRequest = request.path.startsWith('/api/');
+  if (isApiRequest && origin !== frontendOrigin) {
+    return response.status(403).json({ error: 'Origen no autorizado.' });
+  }
+  if (origin === frontendOrigin) {
+    response.setHeader('Vary', 'Origin');
+    response.setHeader('Access-Control-Allow-Origin', frontendOrigin);
     response.setHeader('Access-Control-Allow-Credentials', 'true');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     response.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   }
-  if (request.method === 'OPTIONS') return response.sendStatus(204);
+  if (request.method === 'OPTIONS') {
+    if (origin !== frontendOrigin) return response.status(403).end();
+    return response.sendStatus(204);
+  }
   next();
 });
 function now() {
@@ -141,6 +167,16 @@ app.get('/auth/discord/callback', async (request, response) => {
 
 app.post('/api/auth/logout', (request, response) => request.session.destroy(() => response.json({ ok: true })));
 app.get('/api/auth/me', (request, response) => response.json({ user: request.session.discordUser || null, devAuthenticated: Boolean(request.session.devAuthenticated) }));
+app.get('/api/health', asyncRoute(async (_request, response) => {
+  await database.query('SELECT 1');
+  response.json({
+    status: 'ok',
+    service: 'modeos-el-obi',
+    database: 'connected',
+    version: process.env.RENDER_GIT_COMMIT || process.env.SOURCE_VERSION || 'local',
+    checkedAt: now()
+  });
+}));
 app.get('/api/discord/guilds', requireDiscordUser, (request, response) => {
   const guilds = (request.session.discordGuilds || []).map(guild => ({
     ...guild,
@@ -149,6 +185,90 @@ app.get('/api/discord/guilds', requireDiscordUser, (request, response) => {
   response.json(guilds);
 });
 app.get('/api/config', (_request, response) => response.json({ discordClientId: process.env.DISCORD_CLIENT_ID || null }));
+
+async function readSiteState() {
+  const [settingsResult, messagesResult] = await Promise.all([
+    database.query("SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('maintenance', 'maintenance_message')"),
+    database.query('SELECT message_id, content, created_at FROM site_messages ORDER BY created_at DESC, message_id DESC LIMIT 100')
+  ]);
+  const settings = Object.fromEntries(settingsResult.rows.map(row => [row.setting_key, row.setting_value]));
+  return {
+    maintenance: settings.maintenance === true,
+    maintenanceMessage: typeof settings.maintenance_message === 'string' ? settings.maintenance_message : 'Estamos realizando tareas de mantenimiento.',
+    messages: messagesResult.rows
+  };
+}
+
+async function broadcastSiteUpdate() {
+  const state = await readSiteState();
+  const payload = `data: ${JSON.stringify(state)}\n\n`;
+  for (const response of siteUpdateClients) response.write(payload);
+}
+
+app.get('/api/site-state', asyncRoute(async (_request, response) => {
+  response.json(await readSiteState());
+}));
+
+app.get('/api/site/updates', (request, response) => {
+  response.setHeader('Content-Type', 'text/event-stream');
+  response.setHeader('Cache-Control', 'no-cache');
+  response.setHeader('Connection', 'keep-alive');
+  response.flushHeaders();
+  siteUpdateClients.add(response);
+  response.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
+  const heartbeat = setInterval(() => response.write(': keep-alive\n\n'), 20000);
+  request.on('close', () => {
+    clearInterval(heartbeat);
+    siteUpdateClients.delete(response);
+  });
+});
+
+app.put('/api/dev/site-state', requireDev, asyncRoute(async (request, response) => {
+  const { maintenance, maintenanceMessage } = request.body || {};
+  if (typeof maintenance !== 'boolean') {
+    return response.status(400).json({ error: 'maintenance debe ser true o false.' });
+  }
+  if (typeof maintenanceMessage !== 'string' || maintenanceMessage.trim().length > 500) {
+    return response.status(400).json({ error: 'El mensaje de mantenimiento es obligatorio y debe tener 500 caracteres o menos.' });
+  }
+  await database.query(`
+    INSERT INTO site_settings (setting_key, setting_value, updated_at)
+    VALUES ('maintenance', to_jsonb($1::boolean), NOW()),
+           ('maintenance_message', to_jsonb($2::text), NOW())
+    ON CONFLICT (setting_key) DO UPDATE SET
+      setting_value = EXCLUDED.setting_value,
+      updated_at = EXCLUDED.updated_at
+  `, [maintenance, maintenanceMessage.trim()]);
+  await logSecurity('site_state_updated', request, { maintenance });
+  const state = await readSiteState();
+  await broadcastSiteUpdate();
+  response.json(state);
+}));
+
+app.post('/api/dev/site-messages', requireDev, asyncRoute(async (request, response) => {
+  const content = typeof request.body?.content === 'string' ? request.body.content.trim() : '';
+  if (!content || content.length > 1000) {
+    return response.status(400).json({ error: 'El mensaje debe tener entre 1 y 1000 caracteres.' });
+  }
+  const { rows } = await database.query(
+    'INSERT INTO site_messages (content) VALUES ($1) RETURNING message_id, content, created_at',
+    [content]
+  );
+  await logSecurity('site_message_created', request, { messageId: rows[0].message_id });
+  const state = await readSiteState();
+  await broadcastSiteUpdate();
+  response.status(201).json({ message: rows[0], state });
+}));
+
+app.delete('/api/dev/site-messages/:id', requireDev, asyncRoute(async (request, response) => {
+  if (!/^\d+$/.test(request.params.id)) return response.status(400).json({ error: 'Identificador de mensaje inválido.' });
+  const result = await database.query('DELETE FROM site_messages WHERE message_id = $1 RETURNING message_id', [request.params.id]);
+  if (!result.rowCount) return response.status(404).json({ error: 'No se encontró ese mensaje.' });
+  await logSecurity('site_message_removed', request, { messageId: result.rows[0].message_id });
+  const state = await readSiteState();
+  await broadcastSiteUpdate();
+  response.json(state);
+}));
 
 function siteImageUrl(slot, updatedAt) {
   return `/api/site-images/${slot}?v=${encodeURIComponent(updatedAt)}`;
