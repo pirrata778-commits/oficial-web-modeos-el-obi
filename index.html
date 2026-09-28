@@ -501,7 +501,8 @@
     <!-- Lógica de la plataforma -->
     <script>
         const configuredApiBase = document.querySelector('meta[name="api-base-url"]').content.trim();
-        const API_URL = (configuredApiBase || 'https://modeos-el-obi.onrender.com').replace(/\/$/, '');
+        const isStandalonePreview = window.location.protocol === 'file:' || window.location.hostname.endsWith('.github.io');
+        const API_URL = (configuredApiBase || (isStandalonePreview ? 'https://modeos-el-obi.onrender.com' : window.location.origin)).replace(/\/$/, '');
         let currentUser = null;
         let isDevUnlocked = false;
         let devLogStream = null;

@@ -11,18 +11,16 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
-const publicUrl = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
-const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || null;
+const publicUrl = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`).replace(/\/+$/, '');
+const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || publicUrl;
 const frontendOrigin = frontendUrl ? new URL(frontendUrl).origin : null;
+const backendOrigin = new URL(publicUrl).origin;
 const { Pool } = pg;
 const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
 const maxSiteImageBytes = 2 * 1024 * 1024;
 
 if (!process.env.SESSION_SECRET || !process.env.DEV_PASSWORD || !process.env.DATABASE_URL) {
   throw new Error('Faltan SESSION_SECRET, DEV_PASSWORD o DATABASE_URL en .env');
-}
-if (process.env.NODE_ENV === 'production' && !frontendUrl) {
-  throw new Error('FRONTEND_URL debe ser el origen público del frontend en producción.');
 }
 if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || !process.env.DISCORD_BOT_TOKEN) {
   console.warn('[CONFIG] OAuth o bot de Discord todavía no están configurados.');
@@ -73,7 +71,7 @@ const siteUpdateClients = new Set();
 app.use((request, response, next) => {
   const origin = request.headers.origin;
   const isApiRequest = request.path.startsWith('/api/');
-  if (isApiRequest && origin !== frontendOrigin) {
+  if (isApiRequest && origin && origin !== frontendOrigin) {
     return response.status(403).json({ error: 'Origen no autorizado.' });
   }
   if (origin === frontendOrigin) {
@@ -84,7 +82,7 @@ app.use((request, response, next) => {
     response.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   }
   if (request.method === 'OPTIONS') {
-    if (origin !== frontendOrigin) return response.status(403).end();
+    if (!origin || origin !== frontendOrigin) return response.status(403).end();
     return response.sendStatus(204);
   }
   next();
@@ -124,7 +122,12 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: process.env.FRONTEND_URL ? 'none' : 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 8 * 60 * 60 * 1000 }
+  cookie: {
+    httpOnly: true,
+    sameSite: frontendOrigin && frontendOrigin !== backendOrigin ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 8 * 60 * 60 * 1000
+  }
 }));
 
 app.get('/auth/discord', (request, response) => {
@@ -138,7 +141,13 @@ app.get('/auth/discord', (request, response) => {
     scope: 'identify guilds',
     state
   });
-  response.redirect(`https://discord.com/oauth2/authorize?${query}`);
+  request.session.save(error => {
+    if (error) {
+      console.error('[OAUTH] No se pudo guardar el state:', error);
+      return response.status(500).send('No se pudo iniciar la sesión de Discord.');
+    }
+    response.redirect(`https://discord.com/oauth2/authorize?${query}`);
+  });
 });
 
 app.get('/auth/discord/callback', async (request, response) => {
@@ -150,15 +159,28 @@ app.get('/auth/discord/callback', async (request, response) => {
       body: new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, client_secret: process.env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code: request.query.code, redirect_uri: `${publicUrl}/auth/discord/callback` })
     });
     const token = await tokenResponse.json();
-    if (!token.access_token) return response.status(401).send('Discord no devolvió un token válido.');
+    if (!tokenResponse.ok || !token.access_token) return response.status(401).send('Discord no devolvió un token válido. Revisa Client ID, Client Secret y Redirect URI.');
     const userResponse = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${token.access_token}` } });
+    if (!userResponse.ok) return response.status(401).send('Discord no pudo validar el perfil autorizado. Inténtalo de nuevo.');
     const user = await userResponse.json();
     const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', { headers: { Authorization: `Bearer ${token.access_token}` } });
+    if (!guildsResponse.ok) return response.status(502).send('Se autorizó la cuenta, pero Discord no devolvió la lista de servidores.');
     const guilds = await guildsResponse.json();
-    request.session.discordUser = { id: user.id, username: user.username, avatar: user.avatar };
-    request.session.discordGuilds = Array.isArray(guilds) ? guilds : [];
-    delete request.session.oauthState;
-    response.redirect(frontendUrl);
+    request.session.regenerate(error => {
+      if (error) {
+        console.error('[OAUTH] No se pudo crear la sesión:', error);
+        return response.status(500).send('No se pudo crear la sesión de acceso.');
+      }
+      request.session.discordUser = { id: user.id, username: user.username, avatar: user.avatar };
+      request.session.discordGuilds = Array.isArray(guilds) ? guilds : [];
+      request.session.save(saveError => {
+        if (saveError) {
+          console.error('[OAUTH] No se pudo guardar la sesión:', saveError);
+          return response.status(500).send('No se pudo guardar la sesión de acceso.');
+        }
+        response.redirect(frontendUrl || publicUrl);
+      });
+    });
   } catch (error) {
     console.error('[OAUTH]', error);
     response.status(500).send('No se pudo completar el acceso con Discord.');
