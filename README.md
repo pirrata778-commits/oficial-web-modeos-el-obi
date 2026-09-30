@@ -1,5 +1,41 @@
 # MODEOS EL OBI
 
+## Notificaciones Discord
+
+El mismo Web Service de Render mantiene el cliente de Discord conectado. El bot vuelve a conectar automaticamente y sincroniza su presencia con el estado global: `activo`, `beta` o `mantenimiento`. El plan `starter` del Blueprint mantiene el proceso disponible; `/api/health` informa tambien del bot y de los avisos pendientes.
+
+La Zona DEV publica automaticamente en Discord los avisos publicos, los cambios de estado y los inicios de directo. Todas las notificaciones son embeds oficiales e incluyen siempre el enlace `https://web-modeos-el-obi.onrender.com`.
+
+Configura `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. Puedes separar los destinos con `DISCORD_STATUS_CHANNEL_ID` y `DISCORD_LIVE_CHANNEL_ID`; si se omiten, se usa el canal principal. El bot necesita permiso `View Channel`, `Send Messages` y `Embed Links` en esos canales.
+
+Para eventos emitidos por otro backend, usa `POST /api/integrations/discord/events` con `Content-Type: application/json` y el encabezado `X-Modeos-Webhook-Secret`, cuyo valor debe coincidir con `DISCORD_EVENTS_WEBHOOK_SECRET`.
+
+```json
+{
+  "type": "developer_announcement",
+  "title": "Comunicado oficial",
+  "message": "Mensaje para la comunidad"
+}
+```
+
+```json
+{
+  "type": "platform_status",
+  "platformStatus": "mantenimiento",
+  "message": "Actualizamos la plataforma."
+}
+```
+
+```json
+{
+  "type": "live_started",
+  "title": "Estamos en directo",
+  "message": "El directo oficial ha comenzado."
+}
+```
+
+Los avisos se guardan primero en una cola PostgreSQL. Si el bot o Discord estan momentaneamente desconectados, el servicio los reintenta al reconectar y cada minuto hasta entregarlos.
+
 ## Arranque
 
 1. Instala Node.js 20 o superior.

@@ -2,7 +2,7 @@
 <html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="api-base-url" content="https://web-modeos-el-obi-backend.onrender.com">
     <title>MODEOS EL OBI | Cyberpunk Platform</title>
     <link rel="stylesheet" href="cookies.css">
@@ -37,6 +37,46 @@
             background-image: linear-gradient(to right, rgba(0,255,204,0.04) 1px, transparent 1px),
                               linear-gradient(to bottom, rgba(157,0,255,0.04) 1px, transparent 1px);
             background-size: 30px 30px;
+        }
+        /* Responsive layout and touch targets */
+        *, *::before, *::after { box-sizing: border-box; }
+        img, video, canvas, svg { max-width: 100%; }
+        input, select, textarea, button { max-width: 100%; }
+        table { width: 100%; border-collapse: collapse; }
+        pre, code { max-width: 100%; overflow-wrap: anywhere; }
+        .tab-content, .glass-panel, main { min-width: 0; }
+        @media (max-width: 767px) {
+            body { overflow-x: clip; }
+            main { width: 100%; padding-left: 1rem; padding-right: 1rem; padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
+            body > nav:first-of-type { flex-wrap: wrap; gap: .65rem; }
+            body > nav:first-of-type > :first-child { min-width: 0; flex: 1 1 auto; }
+            body > nav:first-of-type > :last-child { flex: 0 0 auto; }
+            .mobile-nav-btn { min-width: 3.25rem; min-height: 2.75rem; justify-content: center; }
+            body > div.fixed.bottom-0 { padding-bottom: calc(.5rem + env(safe-area-inset-bottom)); }
+            #tab-devzone > .glass-panel > :first-child,
+            #tab-devzone section > .flex.items-center.justify-between,
+            #subview-servers section > .flex.items-center.justify-between { flex-wrap: wrap; gap: .75rem; }
+            #tab-devzone section > .flex.items-center.justify-between > div,
+            #subview-servers section > .flex.items-center.justify-between > div { min-width: 0; flex: 1 1 12rem; }
+            #tab-devzone select, #tab-devzone textarea,
+            #tab-devzone input:not([type="checkbox"]), #dev-image-slot { width: 100%; min-height: 2.75rem; }
+            #dev-bots-list > div { align-items: stretch; }
+            #dev-bots-list strong, #public-bots-list strong { min-width: 0; overflow-wrap: anywhere; }
+            #public-bots-list > article { align-items: flex-start; flex-direction: column; }
+            #bots-grid-container > article { min-width: 0; }
+            #bots-grid-container > article > div:first-child { flex-wrap: wrap; }
+            #bots-grid-container > article > div:first-child > :last-child { white-space: normal; }
+            #dev-command-form { flex-wrap: wrap; }
+            #dev-command-form input { flex: 1 1 10rem; }
+            #dev-command-form button { min-height: 2.75rem; }
+            #subtab-btn-servers, #subtab-btn-invite { min-height: 3rem; padding-left: .5rem; padding-right: .5rem; flex-wrap: wrap; }
+            .overflow-x-auto { max-width: 100%; }
+            table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        }
+        @media (max-width: 380px) {
+            #subtab-btn-servers, #subtab-btn-invite { font-size: .625rem; }
+            #subtab-btn-invite span:nth-child(2) { overflow-wrap: anywhere; }
+            body > nav:first-of-type > :first-child > div:last-child span:first-child { font-size: .65rem; }
         }
     </style>
 </head>
@@ -283,17 +323,361 @@
             </div>
         </section>
 
-        <!-- DASHBOARD -->
+        <!-- DASHBOARD (GESTIÓN DE BOTS) -->
         <section id="tab-dashboard" class="tab-content hidden space-y-6">
-            <div class="glass-panel p-5 sm:p-8 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-[#5865F2]/40">
-                <div>
-                    <div class="inline-flex items-center space-x-2 px-3 py-1 bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#5865F2] text-[10px] font-orbitron font-bold uppercase rounded-full mb-2">
-                        <i class="fa-brands fa-discord"></i><span>Discord Bots Hub</span>
+            
+            <!-- Estado No Autenticado (si el usuario aún no ha iniciado sesión con Discord) -->
+            <!-- Banner cuando NO se ha iniciado sesión con Discord -->
+            <div id="dashboard-guest-banner" class="glass-panel p-4 sm:p-5 rounded-2xl border-[#5865F2]/40 bg-[#5865F2]/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-10 h-10 rounded-xl bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#8f9bff] flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-brands fa-discord"></i>
                     </div>
-                    <h2 class="font-orbitron text-xl sm:text-3xl font-black text-white">Dashboard Multi-Bot</h2>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="font-orbitron font-bold text-white text-xs sm:text-sm">Inicia sesión con Discord</h3>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-orbitron font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">Modo Demo / Exploración</span>
+                        </div>
+                        <p class="text-[11px] text-gray-300 mt-0.5">Conecta tu cuenta para sincronizar tus servidores reales en tiempo real. Puedes interactuar con las dos vistas y generar invitaciones ahora mismo.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="loginDiscord()" class="px-5 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-orbitron font-bold rounded-xl transition flex items-center space-x-2 shrink-0 shadow-[0_0_20px_rgba(88,101,242,0.4)]">
+                    <i class="fa-brands fa-discord"></i><span>Conectar con Discord</span>
+                </button>
+            </div>
+
+            <!-- Banner cuando SÍ se ha iniciado sesión con Discord -->
+            <div id="dashboard-auth-banner" class="hidden glass-panel p-3.5 sm:p-4 rounded-2xl border-emerald-500/30 bg-emerald-500/10 flex items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <p class="text-xs text-emerald-300 font-orbitron">
+                        Sesión de Discord iniciada como <strong id="dashboard-banner-username" class="text-white">Usuario</strong> · Servidores sincronizados en tiempo real
+                    </p>
+                </div>
+                <button type="button" onclick="reloadGuilds(true)" class="text-xs font-orbitron text-emerald-400 hover:text-white transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-arrows-rotate"></i><span class="hidden sm:inline">Refrescar servidores</span>
+                </button>
+            </div>
+
+            <!-- Panel de Control de Bots dividido en dos bloques lógicos -->
+            <div id="dashboard-main-view" class="space-y-6">
+                <!-- Encabezado del Panel -->
+                <div class="glass-panel p-5 sm:p-7 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-[#5865F2]/40 relative overflow-hidden">
+                    <div class="absolute -right-16 -top-16 w-52 h-52 bg-[#5865F2]/15 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="space-y-1">
+                        <div class="inline-flex items-center space-x-2 px-3 py-1 bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#8f9bff] text-[10px] font-orbitron font-bold uppercase rounded-full">
+                            <i class="fa-brands fa-discord"></i><span>Discord Bots Hub</span>
+                        </div>
+                        <h2 class="font-orbitron text-xl sm:text-2xl font-black text-white">Panel de Gestión de Bots</h2>
+                        <p class="text-xs text-gray-400">Control de presencia en servidores y generador avanzado de invitaciones.</p>
+                    </div>
+
+                    <!-- Bot Status & Perfil de Usuario -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div id="dashboard-bot-status-pill" class="flex items-center space-x-2 px-3 py-1.5 bg-black/60 border border-white/10 rounded-xl text-xs font-orbitron">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="text-gray-300 text-[11px]">Bot: <strong id="dashboard-bot-name-label" class="text-white">MODEOS Bot</strong></span>
+                        </div>
+                        <div id="dashboard-user-pill" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-[#5865F2]/15 border border-[#5865F2]/30 rounded-xl text-xs font-orbitron text-[#a8b2ff]">
+                            <i class="fa-regular fa-user text-xs"></i>
+                            <span id="dashboard-user-name-label" class="text-white text-[11px]">Usuario</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selector de Vistas / Sub-navegación lógica en dos bloques -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0a0a16]/90 border border-white/10 rounded-2xl p-2 backdrop-blur-xl">
+                    <div class="grid grid-cols-2 gap-2 flex-grow sm:flex-grow-0 sm:flex sm:space-x-2">
+                        <button id="subtab-btn-servers" type="button" onclick="switchDashboardView('servers')" class="px-4 py-2.5 rounded-xl font-orbitron text-xs font-bold transition-all flex items-center justify-center space-x-2 bg-[#5865F2] text-white shadow-[0_0_20px_rgba(88,101,242,0.4)]">
+                            <i class="fa-solid fa-server text-xs"></i>
+                            <span>Mis Servidores</span>
+                            <span id="subtab-badge-servers" class="ml-1 px-1.5 py-0.5 bg-white/20 rounded-md text-[10px] font-mono">0</span>
+                        </button>
+                        <button id="subtab-btn-invite" type="button" onclick="switchDashboardView('invite')" class="px-4 py-2.5 rounded-xl font-orbitron text-xs font-bold transition-all flex items-center justify-center space-x-2 text-gray-400 hover:text-white border border-transparent">
+                            <i class="fa-solid fa-user-plus text-xs"></i>
+                            <span>Invitar & Añadir Bots</span>
+                            <span class="ml-1 px-1.5 py-0.5 bg-[#00ffcc]/10 text-[#00ffcc] border border-[#00ffcc]/30 rounded-md text-[9px]">Opciones</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-end space-x-2 text-[11px] text-gray-400 px-2 font-orbitron">
+                        <span id="dashboard-view-mode-indicator" class="text-purple-300 flex items-center"><i class="fa-solid fa-server text-xs mr-1 text-[#00ffcc]"></i><span>Vista de Servidores & Detección</span></span>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- BLOQUE 1: LISTADO DE SERVIDORES Y ESTADO BOT   -->
+                <!-- ============================================== -->
+                <div id="subview-servers" class="space-y-5">
+                    <section class="glass-panel p-5 rounded-2xl border-white/10 space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div><h3 class="font-orbitron text-sm font-bold text-white">Estado de los bots de la comunidad</h3><p class="text-xs text-gray-400 mt-1">Estados publicados en tiempo real desde el catálogo.</p></div>
+                            <button type="button" onclick="loadBots()" class="px-3 py-2 rounded-xl border border-white/15 text-xs text-gray-300 hover:text-white">Actualizar</button>
+                        </div>
+                        <div id="public-bots-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" aria-live="polite"></div>
+                    </section>
+                    <!-- Tarjetas de Estadísticas Rápidas -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="glass-panel p-4 rounded-2xl border-white/10 flex items-center space-x-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-[#5865F2]/20 border border-[#5865F2]/40 flex items-center justify-center text-[#8f9bff] text-lg">
+                                <i class="fa-solid fa-server"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400 font-orbitron uppercase tracking-wider">Total Servidores</p>
+                                <p id="stat-total-guilds" class="text-xl font-bold font-orbitron text-white">0</p>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl border-emerald-500/30 flex items-center space-x-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-emerald-400/90 font-orbitron uppercase tracking-wider">Bot Conectado</p>
+                                <div class="flex items-center space-x-1.5">
+                                    <p id="stat-connected-guilds" class="text-xl font-bold font-orbitron text-emerald-400">0</p>
+                                    <span class="text-[10px] text-gray-400">servidores</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl border-amber-500/30 flex items-center space-x-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-lg">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-amber-400/90 font-orbitron uppercase tracking-wider">Sin Conectar</p>
+                                <div class="flex items-center space-x-1.5">
+                                    <p id="stat-missing-guilds" class="text-xl font-bold font-orbitron text-amber-300">0</p>
+                                    <span class="text-[10px] text-gray-400">pendientes</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Búsqueda, Filtros y Acciones -->
+                    <div class="glass-panel p-4 rounded-2xl border-white/10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                        <div class="relative flex-grow max-w-md">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            <input type="text" id="guilds-search-input" oninput="handleGuildSearch()" placeholder="Buscar servidor por nombre o ID..." class="w-full bg-[#05050b] border border-white/15 rounded-xl pl-9 pr-3 py-2 text-white text-xs outline-none focus:border-[#5865F2] placeholder-gray-500">
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="inline-flex bg-black/50 border border-white/10 rounded-xl p-1 text-[11px] font-orbitron">
+                                <button type="button" onclick="setGuildFilter('all')" id="filter-btn-all" class="px-2.5 py-1 rounded-lg text-white bg-[#5865F2]/40 font-bold transition">Todos</button>
+                                <button type="button" onclick="setGuildFilter('connected')" id="filter-btn-connected" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition">Conectados</button>
+                                <button type="button" onclick="setGuildFilter('missing')" id="filter-btn-missing" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition">Sin Bot</button>
+                                <button type="button" onclick="setGuildFilter('admin')" id="filter-btn-admin" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition">Admin/Owner</button>
+                            </div>
+                            <button type="button" onclick="reloadGuilds(true)" id="guilds-refresh-btn" title="Comprobar servidores en vivo" class="px-3 py-2 bg-black/60 hover:bg-white/10 border border-white/15 rounded-xl text-gray-300 hover:text-white text-xs transition flex items-center space-x-1.5">
+                                <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                                <span class="hidden sm:inline font-orbitron text-[11px]">Actualizar</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contenedor Rejilla de Servidores -->
+                    <div id="bots-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-live="polite">
+                        <!-- Generado dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- BLOQUE 2: INVITAR Y AÑADIR BOTS A SERVIDORES   -->
+                <!-- ============================================== -->
+                <div id="subview-invite" class="hidden space-y-6">
+                    <!-- Ficha del Bot y Explicación -->
+                    <div class="glass-panel p-5 sm:p-7 rounded-3xl border-[#00ffcc]/30 relative overflow-hidden space-y-4">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-[#9d00ff] to-[#00ffcc] p-0.5 shrink-0 shadow-[0_0_20px_rgba(0,255,204,0.3)]">
+                                    <div class="w-full h-full bg-[#05050b] rounded-[14px] flex items-center justify-center overflow-hidden">
+                                        <img id="invite-bot-avatar" src="" alt="Avatar del bot" class="hidden w-full h-full object-cover">
+                                        <i id="invite-bot-avatar-fallback" class="fa-solid fa-robot text-[#00ffcc] text-2xl"></i>
+                                    </div>
+                                    <span id="invite-bot-online-badge" class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-[#030308] rounded-full"></span>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="flex items-center space-x-2">
+                                        <h3 id="invite-bot-title" class="font-orbitron text-lg sm:text-xl font-bold text-white">MODEOS EL OBI Bot</h3>
+                                        <span class="px-2 py-0.5 bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#8f9bff] text-[9px] font-orbitron font-bold uppercase rounded-md">Bot Oficial</span>
+                                    </div>
+                                    <p class="text-xs text-gray-300">
+                                        Genera el enlace OAuth2 oficial con los permisos recomendados para integrarlo en tu comunidad.
+                                    </p>
+                                    <div class="flex items-center space-x-2 pt-0.5 text-[11px] text-gray-400 font-mono">
+                                        <span>Client ID: <strong id="invite-bot-client-id-display" class="text-gray-200">Consultando...</strong></span>
+                                        <button type="button" onclick="copyBotClientId()" title="Copiar ID" class="text-gray-400 hover:text-[#00ffcc] transition"><i class="fa-regular fa-copy"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" onclick="switchDashboardView('servers')" class="px-3.5 py-2 bg-black/60 hover:bg-white/10 border border-white/20 text-gray-300 hover:text-white rounded-xl text-xs font-orbitron transition flex items-center space-x-2 shrink-0">
+                                <i class="fa-solid fa-arrow-left"></i><span>Ver mis Servidores</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Configurador de Enlace de Invitación -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Columna Izquierda: Opciones y Permisos -->
+                        <div class="lg:col-span-2 glass-panel p-5 sm:p-7 rounded-3xl border-purple-500/30 space-y-6">
+                            <div>
+                                <h3 class="font-orbitron font-bold text-white text-base flex items-center">
+                                    <i class="fa-solid fa-sliders text-[#00ffcc] mr-2 text-sm"></i>
+                                    Configurador de Invitación
+                                </h3>
+                                <p class="text-xs text-gray-400 mt-1">Selecciona el servidor de destino y el nivel de permisos que concederás al bot.</p>
+                            </div>
+
+                            <!-- Paso 1: Servidor Destino -->
+                            <div class="space-y-2">
+                                <label for="invite-target-guild" class="block font-orbitron text-xs text-gray-300 font-bold uppercase tracking-wider">
+                                    1. Servidor de Destino (Opcional)
+                                </label>
+                                <select id="invite-target-guild" onchange="updateGeneratedInviteUrl()" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3.5 py-2.5 text-white text-xs outline-none focus:border-[#9d00ff]">
+                                    <option value="">Cualquier servidor (Elegir en Discord durante la autorización)</option>
+                                </select>
+                                <p class="text-[11px] text-gray-400">Si seleccionas un servidor concreto, la ventana de Discord lo abrirá preseleccionado.</p>
+                            </div>
+
+                            <!-- Paso 2: Presets de Permisos -->
+                            <div class="space-y-3">
+                                <label class="block font-orbitron text-xs text-gray-300 font-bold uppercase tracking-wider">
+                                    2. Perfil de Permisos
+                                </label>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <!-- Preset Administrador -->
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="invite-preset" value="admin" checked onchange="handlePresetChange('admin')" class="peer sr-only">
+                                        <div class="p-3.5 rounded-2xl bg-black/50 border border-white/15 peer-checked:border-[#00ffcc] peer-checked:bg-[#00ffcc]/10 peer-checked:shadow-[0_0_15px_rgba(0,255,204,0.2)] transition space-y-1.5 h-full">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-orbitron font-bold text-white text-xs">Administrador</span>
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-300 font-mono">8</span>
+                                            </div>
+                                            <p class="text-[11px] text-gray-400 leading-snug">Control completo. Recomendado para evitar problemas con roles, canales y logs.</p>
+                                        </div>
+                                    </label>
+
+                                    <!-- Preset Moderación -->
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="invite-preset" value="moderation" onchange="handlePresetChange('moderation')" class="peer sr-only">
+                                        <div class="p-3.5 rounded-2xl bg-black/50 border border-white/15 peer-checked:border-[#5865F2] peer-checked:bg-[#5865F2]/10 peer-checked:shadow-[0_0_15px_rgba(88,101,242,0.3)] transition space-y-1.5 h-full">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-orbitron font-bold text-white text-xs">Moderación</span>
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300 font-mono">Estándar</span>
+                                            </div>
+                                            <p class="text-[11px] text-gray-400 leading-snug">Gestionar mensajes, expulsar, banear, crear canales e interactuar con comandos.</p>
+                                        </div>
+                                    </label>
+
+                                    <!-- Preset Básico -->
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="invite-preset" value="basic" onchange="handlePresetChange('basic')" class="peer sr-only">
+                                        <div class="p-3.5 rounded-2xl bg-black/50 border border-white/15 peer-checked:border-pink-500 peer-checked:bg-pink-500/10 peer-checked:shadow-[0_0_15px_rgba(255,0,127,0.2)] transition space-y-1.5 h-full">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-orbitron font-bold text-white text-xs">Básico</span>
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-pink-500/30 text-pink-300 font-mono">Mínimo</span>
+                                            </div>
+                                            <p class="text-[11px] text-gray-400 leading-snug">Solo leer canales, enviar mensajes, historial y ejecutar Slash Commands.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Opciones Avanzadas de Permisos Individuales (Colapsable) -->
+                            <div class="border border-white/10 rounded-2xl p-4 bg-black/40 space-y-3">
+                                <button type="button" onclick="toggleCustomPermissionsPanel()" class="w-full flex items-center justify-between text-left text-xs font-orbitron font-bold text-gray-300 hover:text-white">
+                                    <span class="flex items-center"><i class="fa-solid fa-gears text-[#9d00ff] mr-2"></i>Permisos Granulares (Avanzado)</span>
+                                    <i id="custom-perm-chevron" class="fa-solid fa-chevron-down text-xs transition-transform"></i>
+                                </button>
+                                
+                                <div id="custom-permissions-panel" class="hidden pt-3 border-t border-white/10 space-y-3">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-300">
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="8" checked onchange="handleCustomCheckboxChange()"><span>Administrador</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="32" onchange="handleCustomCheckboxChange()"><span>Gestionar Servidor</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="268435456" onchange="handleCustomCheckboxChange()"><span>Gestionar Roles</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="16" onchange="handleCustomCheckboxChange()"><span>Gestionar Canales</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="2" onchange="handleCustomCheckboxChange()"><span>Expulsar Miembros</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="4" onchange="handleCustomCheckboxChange()"><span>Banear Miembros</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="2048" onchange="handleCustomCheckboxChange()"><span>Enviar Mensajes</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="8192" onchange="handleCustomCheckboxChange()"><span>Gestionar Mensajes</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="32768" onchange="handleCustomCheckboxChange()"><span>Adjuntar Archivos</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="65536" onchange="handleCustomCheckboxChange()"><span>Leer Historial</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="2147483648" onchange="handleCustomCheckboxChange()"><span>Comandos de Barra (/)</span></label>
+                                        <label class="flex items-center space-x-2"><input type="checkbox" class="perm-checkbox accent-[#00ffcc]" value="1048576" onchange="handleCustomCheckboxChange()"><span>Conectar a Voz</span></label>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-white/5">
+                                        <span>Máscara de bits calculada: <strong id="calculated-permissions-bits" class="text-[#00ffcc] font-mono">8</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Paso 3: Enlace Generado y Botones -->
+                            <div class="space-y-3 pt-2">
+                                <label for="generated-invite-input" class="block font-orbitron text-xs text-gray-300 font-bold uppercase tracking-wider">
+                                    3. Enlace de Autorización Oficial
+                                </label>
+                                <div class="flex flex-col sm:flex-row items-stretch gap-2">
+                                    <input type="text" id="generated-invite-input" readonly class="flex-grow bg-[#05050b] border border-[#5865F2]/40 rounded-xl px-3.5 py-3 text-white text-xs font-mono select-all outline-none focus:border-[#00ffcc]">
+                                    <button type="button" onclick="copyGeneratedInviteUrl()" id="btn-copy-invite-url" class="px-4 py-3 bg-black/60 hover:bg-white/10 border border-white/20 text-white rounded-xl text-xs font-orbitron font-bold transition flex items-center justify-center space-x-2 shrink-0">
+                                        <i class="fa-regular fa-copy"></i>
+                                        <span id="btn-copy-invite-label">Copiar</span>
+                                    </button>
+                                </div>
+
+                                <div class="pt-2">
+                                    <a id="btn-open-discord-invite" href="#" target="_blank" rel="noopener noreferrer" class="w-full py-4 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold text-xs sm:text-sm rounded-2xl transition shadow-[0_0_30px_rgba(88,101,242,0.4)] flex items-center justify-center space-x-2">
+                                        <i class="fa-brands fa-discord text-base"></i>
+                                        <span>Abrir Invitación en Discord</span>
+                                        <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna Derecha: Multi-Bot & Guía de Ayuda -->
+                        <div class="space-y-6">
+                            <!-- Multi-bot: Usar otro Client ID -->
+                            <div class="glass-panel p-5 rounded-3xl border-white/10 space-y-3">
+                                <div class="flex items-center space-x-2 text-white font-orbitron font-bold text-xs">
+                                    <i class="fa-solid fa-network-wired text-[#00ffcc]"></i>
+                                    <span>Invitar Bot Personalizado</span>
+                                </div>
+                                <p class="text-[11px] text-gray-400 leading-relaxed">
+                                    ¿Deseas invitar un bot secundario o tu propia aplicación de Discord? Introduce su Application Client ID:
+                                </p>
+                                <input type="text" id="custom-bot-client-id" oninput="handleCustomClientIdInput()" placeholder="Ej: 123456789012345678" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-2 text-white text-xs font-mono outline-none focus:border-[#00ffcc] placeholder-gray-600">
+                                <button type="button" onclick="resetToOfficialBotId()" id="btn-reset-official-bot" class="hidden text-[10px] text-[#00ffcc] font-orbitron hover:underline flex items-center">
+                                    <i class="fa-solid fa-rotate-left mr-1"></i>Restablecer bot oficial
+                                </button>
+                            </div>
+
+                            <!-- Guía de 4 Pasos -->
+                            <div class="glass-panel p-5 rounded-3xl border-indigo-500/20 space-y-4">
+                                <h4 class="font-orbitron font-bold text-white text-xs uppercase tracking-wider flex items-center">
+                                    <i class="fa-solid fa-circle-info text-[#5865F2] mr-2"></i>
+                                    Instrucciones de Autorización
+                                </h4>
+                                <ol class="space-y-3 text-xs text-gray-300">
+                                    <li class="flex items-start space-x-2.5">
+                                        <span class="w-5 h-5 rounded-full bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#8f9bff] flex items-center justify-center font-mono text-[10px] shrink-0 font-bold">1</span>
+                                        <span>Haz clic en <strong>Abrir Invitación en Discord</strong>.</span>
+                                    </li>
+                                    <li class="flex items-start space-x-2.5">
+                                        <span class="w-5 h-5 rounded-full bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#8f9bff] flex items-center justify-center font-mono text-[10px] shrink-0 font-bold">2</span>
+                                        <span>Selecciona el servidor en el que seas <strong>Propietario</strong> o tengas <strong>Gestionar Servidor</strong>.</span>
+                                    </li>
+                                    <li class="flex items-start space-x-2.5">
+                                        <span class="w-5 h-5 rounded-full bg-[#5865F2]/20 border border-[#5865F2]/40 text-[#8f9bff] flex items-center justify-center font-mono text-[10px] shrink-0 font-bold">3</span>
+                                        <span>Revisa y acepta los permisos requeridos por el bot.</span>
+                                    </li>
+                                    <li class="flex items-start space-x-2.5">
+                                        <span class="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-mono text-[10px] shrink-0 font-bold">4</span>
+                                        <span>Vuelve a la vista <strong>Mis Servidores</strong> y pulsa <em>Actualizar</em> para verificar la conexión en tiempo real.</span>
+                                    </li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div id="bots-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </section>
 
         <!-- ZONA DEV -->
@@ -311,6 +695,11 @@
                         <i class="fa-solid fa-lock"></i><span class="font-orbitron">Bloquear</span>
                     </button>
                 </div>
+                <section class="space-y-3 border-b border-white/10 pb-5">
+                    <div class="flex items-center justify-between"><div><h3 class="font-orbitron text-sm font-bold text-white">Gestión de estados de bots</h3><p class="text-xs text-gray-400 mt-1">Los cambios se guardan en Neon. Acceso protegido por la sesión DEV.</p></div><button type="button" onclick="loadDevBots()" class="px-3 py-2 rounded-xl border border-white/15 text-xs text-gray-300">Actualizar</button></div>
+                    <div id="dev-bots-list" class="space-y-2" aria-live="polite"></div>
+                    <p id="dev-bots-feedback" class="text-xs text-gray-400" role="status" aria-live="polite"></p>
+                </section>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-live="polite">
                     <div class="bg-black/50 border border-white/10 rounded-xl p-4">
                         <p class="text-[10px] text-gray-400 font-orbitron uppercase">Bot Discord</p>
@@ -330,6 +719,14 @@
                         <h3 class="font-orbitron text-sm font-bold text-white">Estado global</h3>
                         <p class="text-xs text-gray-400 mt-1">Se guarda en Neon y se actualiza en las sesiones abiertas.</p>
                     </div>
+                    <label class="block space-y-1 text-xs text-gray-300">
+                        <span>Estado de la plataforma</span>
+                        <select id="platform-status" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                            <option value="activo">Activo</option>
+                            <option value="beta">Beta</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                        </select>
+                    </label>
                     <label class="flex items-center gap-3 text-sm text-white">
                         <input id="maintenance-enabled" type="checkbox" class="h-5 w-5 accent-[#00ffcc]">
                         <span>Activar modo mantenimiento</span>
@@ -357,6 +754,26 @@
                         </div>
                     </form>
                     <ol id="dev-site-messages" class="space-y-2"></ol>
+                </section>
+                <section class="space-y-4 border-t border-white/10 pt-5">
+                    <div>
+                        <h3 class="font-orbitron text-sm font-bold text-white">Inicio de directo</h3>
+                        <p class="text-xs text-gray-400 mt-1">Publica el aviso oficial de emision en la web y Discord.</p>
+                    </div>
+                    <form id="live-event-form" class="space-y-2">
+                        <label class="block space-y-1 text-xs text-gray-300">
+                            <span>Titulo</span>
+                            <input id="live-event-title" type="text" maxlength="256" value="Estamos en directo" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                        </label>
+                        <label class="block space-y-1 text-xs text-gray-300">
+                            <span>Mensaje</span>
+                            <textarea id="live-event-message" maxlength="1000" rows="2" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">El directo oficial de MODEOS EL OBI ya ha comenzado.</textarea>
+                        </label>
+                        <div class="flex items-center gap-3">
+                            <button id="live-event-submit" type="submit" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-tower-broadcast mr-1"></i>Avisar inicio</button>
+                            <span id="live-event-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                        </div>
+                    </form>
                 </section>
                 <section class="space-y-4 border-t border-white/10 pt-5">
                     <div>
@@ -504,14 +921,32 @@
         const API_URL = (configuredApiBase || 'https://web-modeos-el-obi-backend.onrender.com').replace(/\/$/, '');
         let currentUser = null;
         let isDevUnlocked = false;
+        let isDevAuthorized = false;
         let devLogStream = null;
         let siteUpdateStream = null;
         let siteImages = [];
         let siteState = {
             maintenance: false,
             maintenanceMessage: 'Estamos realizando tareas de mantenimiento.',
+            platformStatus: 'activo',
             messages: []
         };
+
+        let botConfig = {
+            discordClientId: null,
+            botReady: false,
+            botTag: null,
+            botUsername: null,
+            botAvatar: null,
+            botId: null
+        };
+        let cachedGuilds = [];
+        let communityBots = [];
+        let currentGuildFilter = 'all';
+        let currentGuildSearch = '';
+        let activeDashboardSubView = 'servers';
+        let currentInvitePermissions = '8';
+        let customBotClientId = '';
 
         document.addEventListener('DOMContentLoaded', async () => {
             switchTab('lobby');
@@ -520,23 +955,142 @@
             document.getElementById('dev-image-form').addEventListener('submit', handleSiteImageUpload);
             document.getElementById('dev-image-slot').addEventListener('change', updateImageDeleteButton);
             document.getElementById('site-message-form').addEventListener('submit', publishSiteMessage);
-            await Promise.all([loadSession(), loadSiteImages(), loadSiteState(), loadApiHealth()]);
+            document.getElementById('live-event-form').addEventListener('submit', announceLiveEvent);
+            document.getElementById('platform-status').addEventListener('change', event => {
+                document.getElementById('maintenance-enabled').checked = event.target.value === 'mantenimiento';
+            });
+            document.getElementById('maintenance-enabled').addEventListener('change', event => {
+                const select = document.getElementById('platform-status');
+                if (event.target.checked) select.value = 'mantenimiento';
+                if (!event.target.checked && select.value === 'mantenimiento') select.value = 'activo';
+            });
+            await Promise.all([loadSession(), loadSiteImages(), loadSiteState(), loadApiHealth(), loadBotConfig(), loadBots()]);
             renderSiteState();
             connectSiteUpdates();
-            if (currentUser) await loadGuilds();
+            updateDashboardAccessUI();
+            await loadGuilds();
         });
 
+        let sessionRedirecting = false;
+        function showLoadingState(container, message) {
+            if (!container) return;
+            const status = document.createElement('p');
+            status.className = 'col-span-full flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 p-4 text-xs text-gray-300';
+            status.setAttribute('role', 'status');
+            status.setAttribute('aria-live', 'polite');
+            const spinner = document.createElement('i');
+            spinner.className = 'fa-solid fa-spinner fa-spin text-[#00ffcc]';
+            spinner.setAttribute('aria-hidden', 'true');
+            status.append(spinner, document.createTextNode(message));
+            container.replaceChildren(status);
+        }
+
+        function redirectToLogin() {
+            if (sessionRedirecting) return;
+            sessionRedirecting = true;
+            currentUser = null;
+            isDevUnlocked = false;
+            isDevAuthorized = false;
+            if (devLogStream) { devLogStream.close(); devLogStream = null; }
+            updateDashboardAccessUI();
+            document.getElementById('mobile-dev-tab-btn')?.classList.add('hidden');
+            fetch(`${API_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' })
+                .catch(() => {})
+                .finally(() => { window.location.href = `${API_URL}/auth/discord`; });
+        }
         async function apiRequest(path, options = {}) {
-            const response = await fetch(`${API_URL}${path}`, {
-                ...options,
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', ...options.headers }
-            });
+            let response;
+            try {
+                response = await fetch(`${API_URL}${path}`, {
+                    ...options,
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json', ...options.headers }
+                });
+            } catch (error) {
+                throw new Error('No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
+            }
             const result = await response.json().catch(() => ({}));
+            if (response.status === 401 || response.status === 403) redirectToLogin();
             if (!response.ok) throw new Error(result.error || `Error del servidor (${response.status}).`);
             return result;
         }
+        async function loadBots() {
+            const container = document.getElementById('public-bots-list');
+            if (!container) return;
+            showLoadingState(container, 'Cargando estados de los bots…');
+            try {
+                communityBots = await apiRequest('/api/bots');
+                renderPublicBots();
+            } catch (error) {
+                container.textContent = `No se pudo cargar el catálogo: ${error.message}`;
+            }
+        }
 
+        function renderPublicBots() {
+            const container = document.getElementById('public-bots-list');
+            if (!container) return;
+            container.replaceChildren();
+            const labels = { activo: ['🟢', 'Activo'], beta: ['🟡', 'Beta'], mantenimiento: ['🔴', 'Mantenimiento'] };
+            communityBots.forEach(bot => {
+                const card = document.createElement('article');
+                card.className = 'bg-black/40 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-3';
+                const name = document.createElement('strong');
+                name.className = 'text-sm text-white';
+                name.textContent = bot.bot_name;
+                const status = document.createElement('span');
+                status.className = 'text-xs font-bold text-gray-200';
+                const [icon, label] = labels[bot.status] || ['⚪', bot.status];
+                status.textContent = `${icon} ${label}`;
+                card.append(name, status);
+                container.append(card);
+            });
+            if (!communityBots.length) container.textContent = 'No hay bots registrados.';
+        }
+
+        async function loadDevBots() {
+            const list = document.getElementById('dev-bots-list');
+            const feedback = document.getElementById('dev-bots-feedback');
+            if (!list) return;
+            showLoadingState(list, 'Cargando controles de bots…');
+            try {
+                communityBots = await apiRequest('/api/bots');
+                list.replaceChildren();
+                communityBots.forEach(bot => {
+                    const row = document.createElement('div');
+                    row.className = 'flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/40 border border-white/10 rounded-xl p-3';
+                    const name = document.createElement('strong');
+                    name.className = 'text-sm text-white';
+                    name.textContent = `${bot.bot_name} · #${bot.id}`;
+                    const select = document.createElement('select');
+                    select.className = 'bg-[#05050b] border border-white/20 rounded-lg px-3 py-2 text-white text-xs';
+                    [['activo','Activo'], ['beta','Beta'], ['mantenimiento','Mantenimiento']].forEach(([value, label]) => {
+                        const option = document.createElement('option'); option.value = value; option.textContent = label; option.selected = bot.status === value; select.append(option);
+                    });
+                    select.addEventListener('change', async () => {
+                        select.disabled = true;
+                        try {
+                            const updated = await apiRequest('/api/dev/bot-status', { method: 'POST', body: JSON.stringify({ botId: bot.id, status: select.value }) });
+                            bot.status = updated.status;
+                            if (updated.state) {
+                                siteState = updated.state;
+                                renderSiteState();
+                            }
+                            renderPublicBots();
+                            if (feedback) feedback.textContent = `Estado de ${updated.bot_name} actualizado.`;
+                        } catch (error) {
+                            select.value = bot.status;
+                            if (feedback) feedback.textContent = error.message;
+                        } finally { select.disabled = false; }
+                    });
+                    row.append(name, select); list.append(row);
+                });
+                if (!communityBots.length) list.textContent = 'No hay bots registrados.';
+                if (feedback) feedback.textContent = '';
+            } catch (error) {
+                list.textContent = `No se pudieron cargar los controles: ${error.message}`;
+                if (feedback) feedback.textContent = error.message;
+            }
+        }
         function closeBetaBanner() {
             const banner = document.getElementById('beta-banner');
             if(banner) banner.style.display = 'none';
@@ -593,6 +1147,7 @@
 
         function renderSiteState() {
             document.getElementById('maintenance-enabled').checked = siteState.maintenance;
+            document.getElementById('platform-status').value = siteState.platformStatus || (siteState.maintenance ? 'mantenimiento' : 'activo');
             document.getElementById('maintenance-message').value = siteState.maintenanceMessage;
             document.getElementById('maintenance-public-message').textContent = siteState.maintenanceMessage;
             document.getElementById('maintenance-screen').classList.toggle('hidden', !siteState.maintenance || isDevUnlocked);
@@ -670,11 +1225,13 @@
                     method: 'PUT',
                     body: JSON.stringify({
                         maintenance: document.getElementById('maintenance-enabled').checked,
-                        maintenanceMessage: document.getElementById('maintenance-message').value
+                        maintenanceMessage: document.getElementById('maintenance-message').value,
+                        platformStatus: document.getElementById('platform-status').value
                     })
                 });
                 siteState = state;
                 renderSiteState();
+                await loadBots();
                 status.textContent = 'Estado global actualizado.';
             } catch (error) {
                 status.textContent = `No se pudo guardar: ${error.message}`;
@@ -703,7 +1260,28 @@
                 siteState = result.state;
                 input.value = '';
                 renderSiteState();
-                status.textContent = 'Aviso publicado.';
+                status.textContent = 'Aviso publicado y enviado a Discord.';
+            } catch (error) {
+                status.textContent = `No se pudo publicar: ${error.message}`;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function announceLiveEvent(event) {
+            event.preventDefault();
+            const titleInput = document.getElementById('live-event-title');
+            const messageInput = document.getElementById('live-event-message');
+            const button = document.getElementById('live-event-submit');
+            const status = document.getElementById('live-event-status');
+            button.disabled = true;
+            status.textContent = 'Enviando aviso a Discord...';
+            try {
+                await apiRequest('/api/dev/live-events', {
+                    method: 'POST',
+                    body: JSON.stringify({ title: titleInput.value, message: messageInput.value })
+                });
+                status.textContent = 'Aviso de directo publicado.';
             } catch (error) {
                 status.textContent = `No se pudo publicar: ${error.message}`;
             } finally {
@@ -828,9 +1406,14 @@
             try {
                 const session = await apiRequest('/api/auth/me');
                 currentUser = session.user;
-                isDevUnlocked = session.devAuthenticated;
-                if (currentUser) updateDiscordButtonUI(currentUser);
+                isDevAuthorized = Boolean(session.devAuthorized);
+                isDevUnlocked = Boolean(session.devAuthenticated && isDevAuthorized);
+                if (currentUser) {
+                    updateDiscordButtonUI(currentUser);
+                    updateDashboardAccessUI();
+                }
                 if (isDevUnlocked) document.getElementById('mobile-dev-tab-btn').classList.remove('hidden');
+                else document.getElementById('mobile-dev-tab-btn').classList.add('hidden');
             } catch (error) {
                 console.error('No se pudo consultar la sesión:', error);
             }
@@ -848,7 +1431,8 @@
             }
             const username = document.createElement('span');
             username.className = 'font-orbitron text-[10px]';
-            username.textContent = userData.username;
+            username.textContent = 'Salir';
+            discordBtn.setAttribute('aria-label', 'Cerrar sesión de Discord (' + userData.username + ')');
             discordBtn.append(username);
             discordBtn.className = 'px-2.5 sm:px-3 py-2 bg-green-600 text-white text-xs font-bold rounded-xl transition flex items-center space-x-1';
             discordBtn.onclick = logoutDiscord;
@@ -861,23 +1445,48 @@
             } catch (error) {
                 console.error('No se pudo cerrar la sesión:', error);
             }
-            window.location.reload();
+            currentUser = null;
+            isDevUnlocked = false;
+            isDevAuthorized = false;
+            window.location.href = '/';
+        }
+
+        function updateDashboardAccessUI() {
+            const guestBanner = document.getElementById('dashboard-guest-banner');
+            const authBanner = document.getElementById('dashboard-auth-banner');
+            const bannerUser = document.getElementById('dashboard-banner-username');
+            const userPill = document.getElementById('dashboard-user-pill');
+            const userNameLabel = document.getElementById('dashboard-user-name-label');
+
+            if (currentUser) {
+                if (guestBanner) guestBanner.classList.add('hidden');
+                if (authBanner) authBanner.classList.remove('hidden');
+                if (bannerUser) bannerUser.textContent = currentUser.username;
+                if (userPill) userPill.classList.remove('hidden');
+                if (userNameLabel) userNameLabel.textContent = currentUser.username;
+            } else {
+                if (guestBanner) guestBanner.classList.remove('hidden');
+                if (authBanner) authBanner.classList.add('hidden');
+                if (userPill) userPill.classList.add('hidden');
+            }
         }
 
         function switchTab(tabId) {
-            if (tabId === 'dashboard' && !currentUser) {
-                alert("🔒 Inicia sesión con Discord para desbloquear el Dashboard.");
-                return;
-            }
-            if (tabId === 'devzone' && !isDevUnlocked) {
+            if (tabId === 'devzone' && (!isDevUnlocked || !isDevAuthorized)) {
                 openDevModal();
                 return;
             }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById('tab-' + tabId);
             if(target) target.classList.remove('hidden');
+            if (tabId === 'dashboard') {
+                updateDashboardAccessUI();
+                loadBotConfig();
+                if (!cachedGuilds.length) loadGuilds();
+            }
             if (tabId === 'devzone') {
                 refreshDevStatus();
+                loadDevBots();
                 connectDevLogStream();
             }
             document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(button => {
@@ -888,30 +1497,510 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        async function loadGuilds() {
-            const container = document.getElementById('bots-grid-container');
-            try {
-                const guilds = await apiRequest('/api/discord/guilds');
-                container.replaceChildren();
-                if (!guilds.length) {
-                    container.textContent = 'Tu cuenta no pertenece a ningún servidor de Discord.';
-                    return;
+        function switchDashboardView(viewId) {
+            activeDashboardSubView = viewId;
+            const subviewServers = document.getElementById('subview-servers');
+            const subviewInvite = document.getElementById('subview-invite');
+            const btnServers = document.getElementById('subtab-btn-servers');
+            const btnInvite = document.getElementById('subtab-btn-invite');
+            const indicator = document.getElementById('dashboard-view-mode-indicator');
+
+            if (viewId === 'servers') {
+                if (subviewServers) subviewServers.classList.remove('hidden');
+                if (subviewInvite) subviewInvite.classList.add('hidden');
+
+                if (btnServers) {
+                    btnServers.className = 'px-4 py-2.5 rounded-xl font-orbitron text-xs font-bold transition-all flex items-center justify-center space-x-2 bg-[#5865F2] text-white shadow-[0_0_20px_rgba(88,101,242,0.4)]';
                 }
-                guilds.forEach(guild => {
-                    const card = document.createElement('article');
-                    card.className = 'glass-panel p-5 rounded-2xl space-y-3 border-indigo-500/30';
-                    const heading = document.createElement('h3');
-                    heading.className = 'font-orbitron font-bold text-white text-sm';
-                    heading.textContent = guild.name;
-                    const status = document.createElement('p');
-                    status.className = 'text-xs text-gray-400';
-                    status.textContent = guild.botPresent ? 'Bot conectado' : 'Bot no conectado';
-                    card.append(heading, status);
-                    container.append(card);
-                });
-            } catch (error) {
-                container.textContent = error.message;
+                if (btnInvite) {
+                    btnInvite.className = 'px-4 py-2.5 rounded-xl font-orbitron text-xs font-bold transition-all flex items-center justify-center space-x-2 text-gray-400 hover:text-white border border-transparent';
+                }
+                if (indicator) {
+                    indicator.innerHTML = '<i class="fa-solid fa-server text-xs mr-1 text-[#00ffcc]"></i><span>Vista de Servidores & Detección</span>';
+                }
+            } else {
+                if (subviewServers) subviewServers.classList.add('hidden');
+                if (subviewInvite) subviewInvite.classList.remove('hidden');
+
+                if (btnInvite) {
+                    btnInvite.className = 'px-4 py-2.5 rounded-xl font-orbitron text-xs font-bold transition-all flex items-center justify-center space-x-2 bg-[#5865F2] text-white shadow-[0_0_20px_rgba(88,101,242,0.4)]';
+                }
+                if (btnServers) {
+                    btnServers.className = 'px-4 py-2.5 rounded-xl font-orbitron text-xs font-bold transition-all flex items-center justify-center space-x-2 text-gray-400 hover:text-white border border-transparent';
+                }
+                if (indicator) {
+                    indicator.innerHTML = '<i class="fa-solid fa-user-plus text-xs mr-1 text-[#00ffcc]"></i><span>Vista de Invitación & Permisos</span>';
+                }
+                updateGeneratedInviteUrl();
             }
+        }
+
+        async function loadBotConfig() {
+            try {
+                const config = await apiRequest('/api/config');
+                botConfig = {
+                    discordClientId: config.discordClientId || null,
+                    botReady: Boolean(config.botReady),
+                    botTag: config.botTag || 'MODEOS EL OBI Bot',
+                    botUsername: config.botUsername || 'MODEOS Bot',
+                    botAvatar: config.botAvatar || null,
+                    botId: config.botId || config.discordClientId || null
+                };
+
+                const nameLabel = document.getElementById('dashboard-bot-name-label');
+                if (nameLabel) nameLabel.textContent = botConfig.botUsername || 'MODEOS Bot';
+
+                const botTitle = document.getElementById('invite-bot-title');
+                if (botTitle) botTitle.textContent = botConfig.botTag || 'MODEOS EL OBI Bot';
+
+                const clientIdDisplay = document.getElementById('invite-bot-client-id-display');
+                if (clientIdDisplay) clientIdDisplay.textContent = botConfig.discordClientId || 'Demo: 134567890123456789';
+
+                const avatarImg = document.getElementById('invite-bot-avatar');
+                const fallbackIcon = document.getElementById('invite-bot-avatar-fallback');
+                if (botConfig.botAvatar && avatarImg) {
+                    avatarImg.src = botConfig.botAvatar;
+                    avatarImg.classList.remove('hidden');
+                    if (fallbackIcon) fallbackIcon.classList.add('hidden');
+                }
+
+                const onlineBadge = document.getElementById('invite-bot-online-badge');
+                if (onlineBadge) {
+                    onlineBadge.className = `absolute -bottom-1 -right-1 w-4 h-4 border-2 border-[#030308] rounded-full ${botConfig.botReady ? 'bg-emerald-500' : 'bg-emerald-500'}`;
+                }
+
+                updateGeneratedInviteUrl();
+            } catch (err) {
+                console.warn('No se pudo cargar la configuración del bot:', err);
+            }
+        }
+
+        function getEffectiveClientId() {
+            return (customBotClientId || '').trim() || botConfig.discordClientId || '134567890123456789';
+        }
+
+        function getDirectInviteUrlForGuild(guildId) {
+            const clientId = getEffectiveClientId();
+            const perms = currentInvitePermissions || '8';
+            let url = `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&permissions=${encodeURIComponent(perms)}&scope=bot%20applications.commands`;
+            if (guildId) {
+                url += `&guild_id=${encodeURIComponent(guildId)}`;
+            }
+            return url;
+        }
+
+        function updateGeneratedInviteUrl() {
+            const select = document.getElementById('invite-target-guild');
+            const targetGuildId = select ? select.value : '';
+            const url = getDirectInviteUrlForGuild(targetGuildId);
+
+            const input = document.getElementById('generated-invite-input');
+            if (input) input.value = url;
+
+            const openBtn = document.getElementById('btn-open-discord-invite');
+            if (openBtn) openBtn.href = url;
+        }
+
+        function populateInviteGuildSelect(selectedId = '') {
+            const select = document.getElementById('invite-target-guild');
+            if (!select) return;
+            select.replaceChildren();
+
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = 'Cualquier servidor (Elegir en Discord durante la autorización)';
+            select.append(defaultOpt);
+
+            cachedGuilds.forEach(guild => {
+                const opt = document.createElement('option');
+                opt.value = guild.id;
+                const statusTag = guild.botPresent ? ' [✓ Ya conectado]' : ' [Pendiente]';
+                let permTag = '';
+                if (guild.owner) {
+                    permTag = ' 👑 Owner';
+                } else {
+                    try {
+                        const perms = BigInt(guild.permissions || '0');
+                        if ((perms & 8n) === 8n) permTag = ' 🛡️ Admin';
+                        else if ((perms & 32n) === 32n) permTag = ' ⚙️ Gestión';
+                    } catch (_) {}
+                }
+                opt.textContent = `${guild.name}${permTag}${statusTag}`;
+                select.append(opt);
+            });
+
+            if (selectedId) {
+                select.value = selectedId;
+            }
+        }
+
+        function openInviteForGuild(guildId) {
+            switchDashboardView('invite');
+            populateInviteGuildSelect(guildId);
+            updateGeneratedInviteUrl();
+            const targetSelect = document.getElementById('invite-target-guild');
+            if (targetSelect) {
+                targetSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        const demoGuilds = [
+            { id: '104875928472910482', name: 'Comunidad MODEOS EL OBI', icon: null, owner: true, permissions: '8', botPresent: true },
+            { id: '209384729482710394', name: 'Gaming Zone & Comunidad', icon: null, owner: false, permissions: '8', botPresent: false },
+            { id: '304958204918274019', name: 'Servidor Dev & Testing', icon: null, owner: false, permissions: '32', botPresent: true }
+        ];
+
+        let guildsLoadError = '';
+        async function loadGuilds(forceRefresh = false) {
+            const guildContainer = document.getElementById('bots-grid-container');
+            guildsLoadError = '';
+            if (currentUser) showLoadingState(guildContainer, 'Cargando tus servidores de Discord…');
+            const refreshBtn = document.getElementById('guilds-refresh-btn');
+            if (refreshBtn) {
+                const icon = refreshBtn.querySelector('i');
+                if (icon) icon.classList.add('fa-spin');
+            }
+
+            try {
+                if (currentUser) {
+                    const endpoint = forceRefresh ? '/api/discord/guilds?refresh=true' : '/api/discord/guilds';
+                    const guilds = await apiRequest(endpoint);
+                    cachedGuilds = Array.isArray(guilds) ? guilds : [];
+                } else {
+                    cachedGuilds = demoGuilds;
+                }
+            } catch (error) {
+                cachedGuilds = [];
+                guildsLoadError = error.message;
+            } finally {
+                const totalCount = cachedGuilds.length;
+                const connectedCount = cachedGuilds.filter(g => g.botPresent).length;
+                const missingCount = totalCount - connectedCount;
+                const statTotal = document.getElementById('stat-total-guilds');
+                if (statTotal) statTotal.textContent = String(totalCount);
+                const statConnected = document.getElementById('stat-connected-guilds');
+                if (statConnected) statConnected.textContent = String(connectedCount);
+                const statMissing = document.getElementById('stat-missing-guilds');
+                if (statMissing) statMissing.textContent = String(missingCount);
+                const subtabBadge = document.getElementById('subtab-badge-servers');
+                if (subtabBadge) subtabBadge.textContent = String(totalCount);
+                populateInviteGuildSelect();
+                renderGuildsGrid();
+                if (guildsLoadError && guildContainer) {
+                    const errorMessage = document.createElement('p');
+                    errorMessage.className = 'col-span-full rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-300';
+                    errorMessage.setAttribute('role', 'alert');
+                    errorMessage.textContent = 'No se pudieron cargar los servidores: ' + guildsLoadError;
+                    guildContainer.replaceChildren(errorMessage);
+                }
+                if (refreshBtn) {
+                    const icon = refreshBtn.querySelector('i');
+                    if (icon) icon.classList.remove('fa-spin');
+                }
+            }
+        }
+        function renderGuildsGrid() {
+            const container = document.getElementById('bots-grid-container');
+            if (!container) return;
+            container.replaceChildren();
+
+            const query = (currentGuildSearch || '').trim().toLowerCase();
+            const filtered = cachedGuilds.filter(guild => {
+                const matchesSearch = !query || guild.name.toLowerCase().includes(query) || (guild.id && guild.id.includes(query));
+                if (!matchesSearch) return false;
+
+                if (currentGuildFilter === 'connected') return guild.botPresent;
+                if (currentGuildFilter === 'missing') return !guild.botPresent;
+                if (currentGuildFilter === 'admin') {
+                    const isOwner = Boolean(guild.owner);
+                    let isAdmin = false;
+                    try {
+                        const perms = BigInt(guild.permissions || '0');
+                        isAdmin = (perms & 8n) === 8n || (perms & 32n) === 32n;
+                    } catch (_) {}
+                    return isOwner || isAdmin;
+                }
+                return true;
+            });
+
+            if (!filtered.length) {
+                const emptyCard = document.createElement('div');
+                emptyCard.className = 'col-span-full glass-panel p-8 rounded-2xl text-center border-white/10 space-y-3';
+                const emptyIcon = document.createElement('i');
+                emptyIcon.className = 'fa-solid fa-server text-3xl text-gray-500';
+                const emptyTitle = document.createElement('h4');
+                emptyTitle.className = 'font-orbitron font-bold text-white text-sm';
+                emptyTitle.textContent = cachedGuilds.length === 0 
+                    ? 'Tu cuenta no pertenece a ningún servidor de Discord.' 
+                    : 'No se encontraron servidores que coincidan con los filtros.';
+                const emptyDesc = document.createElement('p');
+                emptyDesc.className = 'text-xs text-gray-400 max-w-md mx-auto';
+                emptyDesc.textContent = cachedGuilds.length === 0
+                    ? 'Crea un servidor o únete a uno en Discord y vuelve a pulsar "Actualizar".'
+                    : 'Prueba a cambiar el texto de búsqueda o el filtro seleccionado.';
+                emptyCard.append(emptyIcon, emptyTitle, emptyDesc);
+                if (cachedGuilds.length > 0 && currentGuildFilter !== 'all') {
+                    const resetBtn = document.createElement('button');
+                    resetBtn.type = 'button';
+                    resetBtn.className = 'px-3 py-1.5 bg-[#5865F2]/20 hover:bg-[#5865F2]/30 border border-[#5865F2]/40 text-[#8f9bff] rounded-xl text-xs font-orbitron font-bold transition';
+                    resetBtn.textContent = 'Ver todos los servidores';
+                    resetBtn.onclick = () => setGuildFilter('all');
+                    emptyCard.append(resetBtn);
+                }
+                container.append(emptyCard);
+                return;
+            }
+
+            filtered.forEach(guild => {
+                const card = document.createElement('article');
+                card.className = `glass-panel p-5 rounded-2xl space-y-4 border transition-all hover:scale-[1.01] ${guild.botPresent ? 'border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-indigo-500/30'}`;
+
+                const cardHeader = document.createElement('div');
+                cardHeader.className = 'flex items-start justify-between gap-3';
+
+                const leftInfo = document.createElement('div');
+                leftInfo.className = 'flex items-center space-x-3 min-w-0';
+
+                const iconContainer = document.createElement('div');
+                iconContainer.className = 'w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center border border-white/10 bg-black/60 shadow-inner';
+                if (guild.icon) {
+                    const img = document.createElement('img');
+                    img.src = `https://cdn.discordapp.com/icons/${encodeURIComponent(guild.id)}/${encodeURIComponent(guild.icon)}.png?size=128`;
+                    img.alt = '';
+                    img.className = 'w-full h-full object-cover';
+                    img.onerror = () => {
+                        img.remove();
+                        iconContainer.textContent = (guild.name || 'S').slice(0, 2).toUpperCase();
+                        iconContainer.className += ' font-orbitron font-black text-xs text-[#00ffcc]';
+                    };
+                    iconContainer.append(img);
+                } else {
+                    iconContainer.textContent = (guild.name || 'S').slice(0, 2).toUpperCase();
+                    iconContainer.className += ' font-orbitron font-black text-xs text-[#00ffcc] bg-gradient-to-br from-[#9d00ff]/30 to-[#00ffcc]/20';
+                }
+
+                const nameAndId = document.createElement('div');
+                nameAndId.className = 'min-w-0 space-y-0.5';
+
+                const heading = document.createElement('h3');
+                heading.className = 'font-orbitron font-bold text-white text-sm truncate';
+                heading.textContent = guild.name;
+                heading.title = guild.name;
+
+                const idLine = document.createElement('p');
+                idLine.className = 'text-[10px] text-gray-400 font-mono flex items-center space-x-1';
+                const idSpan = document.createElement('span');
+                idSpan.textContent = `ID: ${guild.id}`;
+                idLine.append(idSpan);
+
+                nameAndId.append(heading, idLine);
+                leftInfo.append(iconContainer, nameAndId);
+
+                const roleBadge = document.createElement('span');
+                let isOwner = Boolean(guild.owner);
+                let isAdmin = false;
+                let isManager = false;
+                try {
+                    const perms = BigInt(guild.permissions || '0');
+                    isAdmin = (perms & 8n) === 8n;
+                    isManager = (perms & 32n) === 32n;
+                } catch (_) {}
+
+                if (isOwner) {
+                    roleBadge.className = 'px-2 py-0.5 rounded-full text-[9px] font-orbitron font-bold bg-amber-400/15 border border-amber-400/40 text-amber-300 shrink-0';
+                    roleBadge.textContent = '👑 Owner';
+                } else if (isAdmin) {
+                    roleBadge.className = 'px-2 py-0.5 rounded-full text-[9px] font-orbitron font-bold bg-purple-500/15 border border-purple-500/40 text-purple-300 shrink-0';
+                    roleBadge.textContent = '🛡️ Admin';
+                } else if (isManager) {
+                    roleBadge.className = 'px-2 py-0.5 rounded-full text-[9px] font-orbitron font-bold bg-blue-500/15 border border-blue-500/40 text-blue-300 shrink-0';
+                    roleBadge.textContent = '⚙️ Gestión';
+                } else {
+                    roleBadge.className = 'px-2 py-0.5 rounded-full text-[9px] font-orbitron font-bold bg-white/5 border border-white/10 text-gray-400 shrink-0';
+                    roleBadge.textContent = '👤 Miembro';
+                }
+
+                cardHeader.append(leftInfo, roleBadge);
+
+                const statusBox = document.createElement('div');
+                statusBox.className = `p-3 rounded-xl flex items-center justify-between text-xs ${guild.botPresent ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-300' : 'bg-black/50 border border-white/10 text-gray-300'}`;
+
+                const statusLabel = document.createElement('div');
+                statusLabel.className = 'flex items-center space-x-2';
+                const statusDot = document.createElement('span');
+                statusDot.className = `w-2 h-2 rounded-full ${guild.botPresent ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`;
+                const statusText = document.createElement('span');
+                statusText.className = 'font-orbitron font-bold text-[11px]';
+                statusText.textContent = guild.botPresent ? 'Bot Conectado' : 'Bot No Conectado';
+                statusLabel.append(statusDot, statusText);
+
+                const statusSub = document.createElement('span');
+                statusSub.className = 'text-[10px] text-gray-400 font-mono';
+                statusSub.textContent = guild.botPresent ? 'Activo' : 'Ausente';
+
+                statusBox.append(statusLabel, statusSub);
+
+                const actionsArea = document.createElement('div');
+                actionsArea.className = 'pt-1 flex items-center gap-2';
+
+                if (guild.botPresent) {
+                    const okButton = document.createElement('div');
+                    okButton.className = 'w-full py-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded-xl text-center text-xs font-orbitron font-bold flex items-center justify-center space-x-1.5';
+                    okButton.innerHTML = '<i class="fa-solid fa-check-double text-xs"></i><span>Sincronizado</span>';
+                    actionsArea.append(okButton);
+                } else {
+                    const directInviteBtn = document.createElement('a');
+                    directInviteBtn.href = getDirectInviteUrlForGuild(guild.id);
+                    directInviteBtn.target = '_blank';
+                    directInviteBtn.rel = 'noopener noreferrer';
+                    directInviteBtn.className = 'flex-grow py-2 px-3 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-xl text-center text-xs font-orbitron font-bold transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(88,101,242,0.3)]';
+                    directInviteBtn.innerHTML = '<i class="fa-brands fa-discord text-xs"></i><span>Añadir Bot</span>';
+
+                    const configBtn = document.createElement('button');
+                    configBtn.type = 'button';
+                    configBtn.onclick = () => openInviteForGuild(guild.id);
+                    configBtn.title = 'Configurar permisos y opciones para este servidor';
+                    configBtn.className = 'py-2 px-3 bg-black/60 hover:bg-white/10 border border-white/20 text-gray-300 hover:text-white rounded-xl text-xs font-orbitron transition flex items-center justify-center';
+                    configBtn.innerHTML = '<i class="fa-solid fa-sliders text-xs"></i>';
+
+                    actionsArea.append(directInviteBtn, configBtn);
+                }
+
+                card.append(cardHeader, statusBox, actionsArea);
+                container.append(card);
+            });
+        }
+
+        function setGuildFilter(filter) {
+            currentGuildFilter = filter;
+            ['all', 'connected', 'missing', 'admin'].forEach(f => {
+                const btn = document.getElementById(`filter-btn-${f}`);
+                if (!btn) return;
+                if (f === filter) {
+                    btn.className = 'px-2.5 py-1 rounded-lg text-white bg-[#5865F2]/40 font-bold transition';
+                } else {
+                    btn.className = 'px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition';
+                }
+            });
+            renderGuildsGrid();
+        }
+
+        function handleGuildSearch() {
+            const input = document.getElementById('guilds-search-input');
+            currentGuildSearch = input ? input.value : '';
+            renderGuildsGrid();
+        }
+
+        function reloadGuilds(force = true) {
+            loadGuilds(force);
+        }
+
+        function handlePresetChange(preset) {
+            let bits = 8;
+            if (preset === 'admin') bits = 8;
+            else if (preset === 'moderation') bits = 2147772630;
+            else if (preset === 'basic') bits = 2147585088;
+
+            currentInvitePermissions = String(bits);
+
+            const checkboxes = document.querySelectorAll('.perm-checkbox');
+            checkboxes.forEach(cb => {
+                const val = Number(cb.value);
+                cb.checked = (bits & val) === val;
+            });
+
+            const bitsLabel = document.getElementById('calculated-permissions-bits');
+            if (bitsLabel) bitsLabel.textContent = String(bits);
+
+            updateGeneratedInviteUrl();
+        }
+
+        function toggleCustomPermissionsPanel() {
+            const panel = document.getElementById('custom-permissions-panel');
+            const chevron = document.getElementById('custom-perm-chevron');
+            if (!panel) return;
+            const isHidden = panel.classList.toggle('hidden');
+            if (chevron) {
+                chevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        }
+
+        function handleCustomCheckboxChange() {
+            let total = 0;
+            const checkboxes = document.querySelectorAll('.perm-checkbox:checked');
+            checkboxes.forEach(cb => {
+                total |= Number(cb.value);
+            });
+
+            currentInvitePermissions = String(total);
+
+            const radios = document.querySelectorAll('input[name="invite-preset"]');
+            radios.forEach(radio => {
+                if (radio.value === 'admin' && total === 8) radio.checked = true;
+                else if (radio.value === 'moderation' && total === 2147772630) radio.checked = true;
+                else if (radio.value === 'basic' && total === 2147585088) radio.checked = true;
+                else radio.checked = false;
+            });
+
+            const bitsLabel = document.getElementById('calculated-permissions-bits');
+            if (bitsLabel) bitsLabel.textContent = String(total);
+
+            updateGeneratedInviteUrl();
+        }
+
+        function copyGeneratedInviteUrl() {
+            const input = document.getElementById('generated-invite-input');
+            const label = document.getElementById('btn-copy-invite-label');
+            if (!input || !input.value) return;
+
+            navigator.clipboard.writeText(input.value).then(() => {
+                if (label) {
+                    const original = label.textContent;
+                    label.textContent = '¡Copiado!';
+                    setTimeout(() => { label.textContent = original; }, 2000);
+                }
+            }).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                if (label) {
+                    const original = label.textContent;
+                    label.textContent = '¡Copiado!';
+                    setTimeout(() => { label.textContent = original; }, 2000);
+                }
+            });
+        }
+
+        function copyBotClientId() {
+            const clientId = getEffectiveClientId();
+            if (!clientId) return;
+            navigator.clipboard.writeText(clientId).then(() => {
+                const display = document.getElementById('invite-bot-client-id-display');
+                if (display) {
+                    const orig = display.textContent;
+                    display.textContent = '¡ID Copiado!';
+                    setTimeout(() => { display.textContent = orig; }, 1500);
+                }
+            }).catch(() => {});
+        }
+
+        function handleCustomClientIdInput() {
+            const input = document.getElementById('custom-bot-client-id');
+            const resetBtn = document.getElementById('btn-reset-official-bot');
+            customBotClientId = input ? input.value.trim() : '';
+
+            if (resetBtn) {
+                resetBtn.classList.toggle('hidden', !customBotClientId);
+            }
+            updateGeneratedInviteUrl();
+        }
+
+        function resetToOfficialBotId() {
+            const input = document.getElementById('custom-bot-client-id');
+            const resetBtn = document.getElementById('btn-reset-official-bot');
+            if (input) input.value = '';
+            customBotClientId = '';
+            if (resetBtn) resetBtn.classList.add('hidden');
+            updateGeneratedInviteUrl();
         }
 
         function openDevModal() { 
@@ -929,6 +2018,7 @@
 
         async function refreshDevStatus() {
             const state = document.getElementById('dev-bot-state');
+            if (state) state.textContent = 'Cargando estado…';
             try {
                 const status = await apiRequest('/api/dev/status');
                 state.textContent = status.ready ? `Conectado: ${status.username}` : 'Desconectado';
@@ -996,6 +2086,7 @@
                     body: JSON.stringify({ password: input.value })
                 });
                 isDevUnlocked = true;
+                isDevAuthorized = true;
                 closeDevModal();
                 input.value = '';
                 document.getElementById('mobile-dev-tab-btn').classList.remove('hidden');
@@ -1020,6 +2111,7 @@
                 devLogStream = null;
             }
             isDevUnlocked = false;
+            isDevAuthorized = false;
             renderSiteState();
             document.getElementById('mobile-dev-tab-btn').classList.add('hidden');
             switchTab('lobby');

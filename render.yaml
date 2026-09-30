@@ -22,6 +22,14 @@ services:
         sync: false
       - key: DISCORD_BOT_TOKEN
         sync: false
+      - key: DISCORD_ANNOUNCEMENTS_CHANNEL_ID
+        sync: false
+      - key: DISCORD_STATUS_CHANNEL_ID
+        sync: false
+      - key: DISCORD_LIVE_CHANNEL_ID
+        sync: false
+      - key: DISCORD_EVENTS_WEBHOOK_SECRET
+        generateValue: true
       - key: DEV_PASSWORD
         sync: false
       - key: DATABASE_URL
