@@ -183,11 +183,6 @@ async function logSecurity(type, request, details = {}) {
   return event;
 }
 
-function isAuthorizedDev(request) {
-  const configuredId = process.env.DISCORD_DEV_USER_ID?.trim();
-  return Boolean(configuredId && String(request.session.discordUser?.id ?? '') === String(configuredId));
-}
-
 function readyBot() {
   return botInstances.find(instance => instance.client.isReady())?.client || null;
 }
@@ -263,9 +258,6 @@ async function configureNotificationChannels(instance, guild) {
 }
 
 function requireDev(request, response, next) {
-  if (!process.env.DISCORD_DEV_USER_ID?.trim()) return response.status(503).json({ error: 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.' });
-  if (!request.session.discordUser) return response.status(401).json({ error: 'Inicia sesión con Discord.' });
-  if (!isAuthorizedDev(request)) return response.status(403).json({ error: 'Esta cuenta de Discord no tiene permiso para acceder al panel DEV.' });
   if (!request.session.devAuthenticated) return response.status(401).json({ error: 'Sesión DEV requerida.' });
   next();
 }
@@ -530,12 +522,9 @@ app.get(['/api/auth/discord/callback', '/auth/discord/callback'], async (request
 
 app.post('/api/auth/logout', (request, response) => request.session.destroy(() => response.json({ ok: true })));
 app.get('/api/auth/me', (request, response) => {
-  const devAccessConfigured = Boolean(process.env.DISCORD_DEV_USER_ID?.trim());
   response.json({
     user: request.session.discordUser || null,
-    devAuthorized: isAuthorizedDev(request),
-    devAuthenticated: Boolean(request.session.devAuthenticated && isAuthorizedDev(request)),
-    devConfigurationError: devAccessConfigured ? null : 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.'
+    devAuthenticated: Boolean(request.session.devAuthenticated)
   });
 });
 app.get('/api/health', asyncRoute(async (_request, response) => {
@@ -1067,18 +1056,16 @@ app.delete('/api/dev/images/:slot', requireDev, asyncRoute(async (request, respo
 }));
 
 app.post('/api/dev/login', asyncRoute(async (request, response) => {
-  if (!process.env.DISCORD_DEV_USER_ID?.trim()) return response.status(503).json({ error: 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.' });
-  if (!request.session.discordUser) return response.status(401).json({ error: 'Inicia sesión con Discord antes de desbloquear el panel DEV.' });
-  if (!isAuthorizedDev(request)) return response.status(403).json({ error: 'Esta cuenta de Discord no tiene permiso para acceder al panel DEV.' });
   const { password } = request.body || {};
-  const { rows } = await database.query('SELECT * FROM dev_attempts WHERE session_id = $1', [request.sessionID]);
+  const attemptKey = request.ip;
+  const { rows } = await database.query('SELECT * FROM dev_attempts WHERE session_id = $1', [attemptKey]);
   let existing = rows[0];
   if (existing?.locked) {
     const lockExpiresAt = Date.parse(existing.updated_at) + 5 * 60 * 1000;
     if (Number.isFinite(lockExpiresAt) && lockExpiresAt > Date.now()) {
       return response.status(423).json({ error: 'Acceso DEV bloqueado temporalmente.', locked: true, retryAfter: Math.ceil((lockExpiresAt - Date.now()) / 1000) });
     }
-    await database.query('UPDATE dev_attempts SET failed_attempts = 0, locked = FALSE, updated_at = $2 WHERE session_id = $1', [request.sessionID, now()]);
+    await database.query('UPDATE dev_attempts SET failed_attempts = 0, locked = FALSE, updated_at = $2 WHERE session_id = $1', [attemptKey, now()]);
     existing = { failed_attempts: 0, locked: false };
   }
   if (password !== process.env.DEV_PASSWORD) {
@@ -1091,12 +1078,18 @@ app.post('/api/dev/login', asyncRoute(async (request, response) => {
         failed_attempts = EXCLUDED.failed_attempts,
         locked = EXCLUDED.locked,
         updated_at = EXCLUDED.updated_at
-    `, [request.sessionID, failedAttempts, locked, now()]);
+    `, [attemptKey, failedAttempts, locked, now()]);
     await logSecurity(locked ? 'access_locked' : 'login_failed', request, { attempts: failedAttempts });
     return response.status(401).json({ error: locked ? 'Máximo de intentos alcanzado.' : 'Contraseña incorrecta.', attemptsRemaining: Math.max(0, 5 - failedAttempts), locked: Boolean(locked) });
   }
-  await database.query('UPDATE dev_attempts SET failed_attempts = 0, locked = FALSE, updated_at = $2 WHERE session_id = $1', [request.sessionID, now()]);
+  await database.query('UPDATE dev_attempts SET failed_attempts = 0, locked = FALSE, updated_at = $2 WHERE session_id = $1', [attemptKey, now()]);
+  await new Promise((resolve, reject) => {
+    request.session.regenerate(error => error ? reject(error) : resolve());
+  });
   request.session.devAuthenticated = true;
+  await new Promise((resolve, reject) => {
+    request.session.save(error => error ? reject(error) : resolve());
+  });
   await logSecurity('login_success', request);
   response.json({ ok: true });
 }));
@@ -1315,9 +1308,4 @@ app.listen(port, () => {
   console.log(`[WEB] MODEOS EL OBI disponible en ${publicUrl}`);
   console.log(`[CONFIG] Redirect URI de Discord: ${redirectUri}`);
   console.log(`[CONFIG] Origen CORS del frontend: ${frontendOrigin}; backend: ${backendOrigin}`);
-  if (process.env.DISCORD_DEV_USER_ID?.trim()) {
-    console.log('[CONFIG] DISCORD_DEV_USER_ID configurado.');
-  } else {
-    console.warn('[CONFIG] DISCORD_DEV_USER_ID NO configurado; acceso DEV deshabilitado.');
-  }
 });

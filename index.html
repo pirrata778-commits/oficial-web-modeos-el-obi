@@ -169,7 +169,7 @@
             <i class="fa-solid fa-robot text-sm mb-0.5"></i>
             <span class="text-[8px] font-bold font-orbitron">Bots</span>
         </button>
-        <button onclick="switchTab('devzone')" id="mobile-dev-tab-btn" class="mobile-nav-btn flex flex-col items-center text-gray-400 p-1 hidden" data-target="devzone">
+        <button onclick="switchTab('devzone')" id="mobile-dev-tab-btn" class="mobile-nav-btn flex flex-col items-center text-gray-400 p-1" data-target="devzone">
             <i class="fa-solid fa-terminal text-sm mb-0.5 text-[#9d00ff]"></i>
             <span class="text-[8px] font-bold font-orbitron text-[#9d00ff]">DEV</span>
         </button>
@@ -959,7 +959,6 @@
         const API_URL = (isLocalHost ? window.location.origin : configuredApiBase || window.location.origin).replace(/\/$/, '');
         let currentUser = null;
         let isDevUnlocked = false;
-        let isDevAuthorized = false;
         let devLogStream = null;
         let siteUpdateStream = null;
         let siteImages = [];
@@ -1028,10 +1027,8 @@
             sessionRedirecting = true;
             currentUser = null;
             isDevUnlocked = false;
-            isDevAuthorized = false;
             if (devLogStream) { devLogStream.close(); devLogStream = null; }
             updateDashboardAccessUI();
-            document.getElementById('mobile-dev-tab-btn')?.classList.add('hidden');
             fetch(`${API_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' })
                 .catch(() => {})
                 .finally(() => { window.location.href = `${API_URL}/api/auth/discord`; });
@@ -1048,7 +1045,10 @@
                 throw new Error('No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
             }
             const result = await response.json().catch(() => ({}));
-            if (response.status === 401 || response.status === 403) redirectToLogin();
+            const devEndpoint = path.startsWith('/api/dev/')
+                || path === '/api/discord/logs'
+                || path === '/api/discord/commands';
+            if ((response.status === 401 || response.status === 403) && !devEndpoint) redirectToLogin();
             if (!response.ok) throw new Error(result.error || `Error del servidor (${response.status}).`);
             return result;
         }
@@ -1674,14 +1674,11 @@
             try {
                 const session = await apiRequest('/api/auth/me');
                 currentUser = session.user;
-                isDevAuthorized = Boolean(session.devAuthorized);
-                isDevUnlocked = Boolean(session.devAuthenticated && isDevAuthorized);
+                isDevUnlocked = Boolean(session.devAuthenticated);
                 if (currentUser) {
                     updateDiscordButtonUI(currentUser);
                     updateDashboardAccessUI();
                 }
-                if (isDevUnlocked) document.getElementById('mobile-dev-tab-btn').classList.remove('hidden');
-                else document.getElementById('mobile-dev-tab-btn').classList.add('hidden');
             } catch (error) {
                 console.error('No se pudo consultar la sesión:', error);
             }
@@ -1715,7 +1712,6 @@
             }
             currentUser = null;
             isDevUnlocked = false;
-            isDevAuthorized = false;
             window.location.href = '/';
         }
 
@@ -1740,7 +1736,7 @@
         }
 
         function switchTab(tabId) {
-            if (tabId === 'devzone' && (!isDevUnlocked || !isDevAuthorized)) {
+            if (tabId === 'devzone' && !isDevUnlocked) {
                 openDevModal();
                 return;
             }
@@ -2354,10 +2350,8 @@
                     body: JSON.stringify({ password: input.value })
                 });
                 isDevUnlocked = true;
-                isDevAuthorized = true;
                 closeDevModal();
                 input.value = '';
-                document.getElementById('mobile-dev-tab-btn').classList.remove('hidden');
                 renderSiteState();
                 switchTab('devzone');
             } catch (error) {
@@ -2379,9 +2373,7 @@
                 devLogStream = null;
             }
             isDevUnlocked = false;
-            isDevAuthorized = false;
             renderSiteState();
-            document.getElementById('mobile-dev-tab-btn').classList.add('hidden');
             switchTab('lobby');
         }
 
