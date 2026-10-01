@@ -75,7 +75,7 @@ Las páginas legales contienen campos entre corchetes que debe completar y revis
 
 1. En Render, este repositorio debe estar desplegado como **Web Service** Node. El Blueprint de `render.yaml` lo nombra `web-modeos-el-obi` y comprueba `/api/health`.
 2. `npm start` inicia Express, que sirve `index.html`, los recursos estáticos y la API desde el mismo dominio. No crees un segundo Static Site para esta web.
-3. En el Web Service define `PUBLIC_URL` con `https://web-modeos-el-obi.onrender.com` y usa esa misma URL en `FRONTEND_URL`.
+3. En el Web Service define `PUBLIC_URL` exactamente como `https://web-modeos-el-obi.onrender.com` (sin `/` final) y usa esa misma URL en `FRONTEND_URL`.
 4. En Render, `index.html` detecta su propio origen como `API_URL`. Si alojas el frontend en otro dominio, configura el backend en `<meta name="api-base-url" content="https://TU-DOMINIO-BACKEND">`; las cookies entre dominios pueden bloquearse, por eso se recomienda el origen único.
 5. En Discord Developer Portal añade como redirect URI, usando el dominio exacto del Web Service:
    `https://web-modeos-el-obi.onrender.com/api/auth/discord/callback`

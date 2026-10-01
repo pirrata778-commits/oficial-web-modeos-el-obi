@@ -23,10 +23,11 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 const publicUrl = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`).replace(/\/+$/, '');
+process.env.PUBLIC_URL = publicUrl;
 const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || publicUrl;
 const frontendOrigin = frontendUrl ? new URL(frontendUrl).origin : null;
 const backendOrigin = new URL(publicUrl).origin;
-const discordRedirectUri = `${publicUrl}/api/auth/discord/callback`;
+const redirectUri = `${process.env.PUBLIC_URL}/api/auth/discord/callback`;
 const { Pool } = pg;
 const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
 const maxSiteImageBytes = 2 * 1024 * 1024;
@@ -338,7 +339,7 @@ app.get('/auth/discord', (request, response) => {
   request.session.oauthState = state;
   const query = new URLSearchParams({
     client_id: process.env.DISCORD_CLIENT_ID,
-    redirect_uri: discordRedirectUri,
+    redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'identify guilds',
     state
@@ -358,7 +359,7 @@ app.get(['/api/auth/discord/callback', '/auth/discord/callback'], async (request
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, client_secret: process.env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code: request.query.code, redirect_uri: discordRedirectUri })
+      body: new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, client_secret: process.env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code: request.query.code, redirect_uri: redirectUri })
     });
     const token = await tokenResponse.json();
     if (!tokenResponse.ok || !token.access_token) return response.status(401).send('Discord no devolvió un token válido. Revisa Client ID, Client Secret y Redirect URI.');
@@ -908,7 +909,7 @@ app.use((error, request, response, next) => {
 });
 app.listen(port, () => {
   console.log(`[WEB] MODEOS EL OBI disponible en ${publicUrl}`);
-  console.log(`[CONFIG] Redirect URI de Discord: ${discordRedirectUri}`);
+  console.log(`[CONFIG] Redirect URI de Discord: ${redirectUri}`);
   console.log(`[CONFIG] Origen CORS del frontend: ${frontendOrigin}; backend: ${backendOrigin}`);
   if (process.env.DISCORD_DEV_USER_ID?.trim()) {
     console.log('[CONFIG] DISCORD_DEV_USER_ID configurado.');
