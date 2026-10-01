@@ -72,13 +72,17 @@ if (!process.env.DISCORD_ANNOUNCEMENTS_CHANNEL_ID) {
 const databaseUrl = new URL(process.env.DATABASE_URL);
 databaseUrl.searchParams.set('sslmode', 'verify-full');
 const database = new Pool({ connectionString: databaseUrl.toString() });
+database.on('error', error => {
+  console.error('[NEON] Error inesperado en una conexión inactiva de PostgreSQL:', error);
+});
 const PgSessionStore = connectPgSimple(session);
 const sessionStore = new PgSessionStore({
   pool: database,
   tableName: 'user_sessions',
   createTableIfMissing: true
 });
-await database.query(`
+try {
+  await database.query(`
   CREATE TABLE IF NOT EXISTS security_logs (
     id BIGSERIAL PRIMARY KEY,
     type TEXT NOT NULL,
@@ -140,6 +144,10 @@ await database.query(`
          ('platform_status', '"activo"'::jsonb)
   ON CONFLICT (setting_key) DO NOTHING;
 `);
+} catch (error) {
+  console.error('[NEON] No se pudo conectar o inicializar el esquema PostgreSQL. Revisa DATABASE_URL, TLS y el acceso de red:', error);
+  throw error;
+}
 
 const app = express();
 app.set('trust proxy', 1);
@@ -1227,22 +1235,27 @@ function startBotInstance(configuredBot, databaseId = null) {
   return instance;
 }
 
-for (const configuredBot of configuredBots) {
-  startBotInstance(configuredBot);
-}
-const managedBotRecords = await database.query(`
-  SELECT id, bot_name, encrypted_token
-  FROM bots
-  WHERE managed_token = TRUE AND encrypted_token IS NOT NULL
-  ORDER BY id
-`);
-for (const botRecord of managedBotRecords.rows) {
-  try {
-    const token = decryptBotToken(botRecord.encrypted_token, process.env.DISCORD_BOT_TOKEN_ENCRYPTION_KEY);
-    startBotInstance({ name: botRecord.bot_name, token }, botRecord.id);
-  } catch (error) {
-    console.error(`[BOT] No se pudo recuperar de forma segura el token almacenado para ${botRecord.bot_name}:`, error.message);
+try {
+  for (const configuredBot of configuredBots) {
+    startBotInstance(configuredBot);
   }
+  const managedBotRecords = await database.query(`
+    SELECT id, bot_name, encrypted_token
+    FROM bots
+    WHERE managed_token = TRUE AND encrypted_token IS NOT NULL
+    ORDER BY id
+  `);
+  for (const botRecord of managedBotRecords.rows) {
+    try {
+      const token = decryptBotToken(botRecord.encrypted_token, process.env.DISCORD_BOT_TOKEN_ENCRYPTION_KEY);
+      startBotInstance({ name: botRecord.bot_name, token }, botRecord.id);
+    } catch (error) {
+      console.error(`[BOT] No se pudo recuperar de forma segura el token almacenado para ${botRecord.bot_name}:`, error.message);
+    }
+  }
+} catch (error) {
+  console.error('[NEON] No se pudieron recuperar los bots persistidos de PostgreSQL durante el arranque:', error);
+  throw error;
 }
 const notificationRetryTimer = setInterval(() => {
   retryPendingNotifications().catch(error => console.error('[DISCORD] Reintento de notificaciones:', error));
