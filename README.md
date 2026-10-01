@@ -2,7 +2,7 @@
 
 ## Notificaciones Discord
 
-El mismo Web Service de Render mantiene conectados uno o varios clientes de Discord. Cada instancia vuelve a conectar automaticamente y conserva su estado `activo`, `beta` o `mantenimiento` en Neon. El plan `starter` del Blueprint mantiene el proceso disponible; `/api/health` informa de las instancias y de los avisos pendientes.
+Al iniciar `server.js`, el mismo Web Service de Render inicia automaticamente el cliente principal configurado en `DISCORD_BOT_TOKEN` o todas las instancias de `DISCORD_BOTS_JSON`. Cada instancia vuelve a conectar automaticamente tras una desconexion; si el primer inicio falla, se reintenta con espera exponencial hasta un maximo de 60 segundos. La conexion se registra en la consola como `[BOT] Conectado exitosamente...` y conserva su estado `activo`, `beta` o `mantenimiento` en Neon. El plan `starter` del Blueprint mantiene el proceso disponible; `/api/health` informa de las instancias y de los avisos pendientes.
 
 La Zona DEV publica automaticamente en Discord los avisos publicos, los cambios de estado y los inicios de directo. Todas las notificaciones son embeds oficiales e incluyen siempre el enlace `https://web-modeos-el-obi.onrender.com`.
 
@@ -11,6 +11,8 @@ Configura `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. Puedes separar los destinos con `D
 Para varias instancias, configura `DISCORD_BOTS_JSON` en Render como un array JSON, por ejemplo `[ {"name":"MODEOS EL OBI", "token":"TOKEN_1"}, {"name":"Bot secundario", "token":"TOKEN_2"} ]`. Cada nombre y token debe ser unico. Si no se define, se admite el formato anterior con `DISCORD_BOT_TOKEN` y, opcionalmente, `DISCORD_BOT_NAME`. Los tokens solo se leen del entorno: nunca se guardan en Neon ni se envian al frontend. Neon registra automaticamente el ID de Discord y el estado de cada instancia al conectarse. El panel DEV cambia el estado individual; el control de estado global de la web es independiente.
 
 Configura `DISCORD_DEV_USER_ID` con el ID numerico de la cuenta Discord autorizada para que las rutas DEV y el desbloqueo por contrasena esten disponibles.
+
+En la Zona DEV puedes añadir bots pegando su token, elegir un servidor al que ya se haya invitado al bot y pulsar **Crear y configurar canales**. Se crea o reutiliza la categoría `ＭＯＤＥＯＳ・ＥＬ・ＯＢＩ` con canales de anuncios, estado web y directos; los tres tipos de aviso se enrutan al bot y servidor seleccionados. También puedes elegir canales de texto existentes para cada tipo de aviso. Activa **Comando /setup** en los bots seleccionados para registrar `/setup` en sus servidores; al usarlo un miembro con `Manage Channels`, el bot crea/reutiliza sus canales y configura las rutas de avisos en la web. El bot necesita `Manage Channels` para estas operaciones, además de `View Channel`, `Send Messages` y `Embed Links` para publicar. `DISCORD_BOT_TOKEN_ENCRYPTION_KEY` debe permanecer estable y secreto (Render puede generarlo con el Blueprint); los tokens añadidos en el panel se guardan cifrados en PostgreSQL. Si se pierde o cambia esta clave, esos bots no podrán reconectarse.
 
 Para eventos emitidos por otro backend, usa `POST /api/integrations/discord/events` con `Content-Type: application/json` y el encabezado `X-Modeos-Webhook-Secret`, cuyo valor debe coincidir con `DISCORD_EVENTS_WEBHOOK_SECRET`.
 
@@ -38,7 +40,7 @@ Para eventos emitidos por otro backend, usa `POST /api/integrations/discord/even
 }
 ```
 
-Los avisos se guardan primero en una cola PostgreSQL. Si el bot o Discord estan momentaneamente desconectados, el servicio los reintenta al reconectar y cada minuto hasta entregarlos.
+Los avisos se guardan primero en una cola PostgreSQL. Si el canal principal no esta configurado, se conserva la notificacion pendiente sin detener Express; cuando se configure el canal, o si el bot o Discord estan momentaneamente desconectados, el servicio reintenta al reconectar y cada minuto hasta entregarla.
 
 ## Arranque
 
@@ -52,7 +54,7 @@ Los avisos se guardan primero en una cola PostgreSQL. Si el bot o Discord estan 
 
 ## Servicios incluidos
 
-- OAuth de Discord en `/auth/discord`.
+- OAuth de Discord en `/api/auth/discord` y `/api/auth/discord/callback` (las rutas anteriores se mantienen como alias).
 - Sesiones HTTP protegidas.
 - Bot real conectado mediante `discord.js`.
 - Logs del bot por Server-Sent Events en `/api/discord/logs`.

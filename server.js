@@ -6,8 +6,9 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import dotenv from 'dotenv';
 import pg from 'pg';
-import { Client, GatewayIntentBits, Events } from 'discord.js';
+import { ChannelType, Client, Events, GatewayIntentBits, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import {
+  DISCORD_NOTIFICATION_LAYOUT,
   MODEOS_WEB_URL,
   NotificationValidationError,
   PLATFORM_STATUSES,
@@ -17,6 +18,7 @@ import {
   notificationChannelEnvironment,
   normalizePlatformStatus
 } from './discord-notifications.js';
+import { decryptBotToken, encryptBotToken } from './discord-bot-secrets.js';
 
 dotenv.config();
 
@@ -114,6 +116,15 @@ await database.query(`
     status TEXT NOT NULL DEFAULT 'beta' CHECK (status IN ('activo', 'beta', 'mantenimiento'))
   );
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS discord_user_id TEXT;
+  ALTER TABLE bots ADD COLUMN IF NOT EXISTS encrypted_token TEXT;
+  ALTER TABLE bots ADD COLUMN IF NOT EXISTS managed_token BOOLEAN NOT NULL DEFAULT FALSE;
+  ALTER TABLE bots ADD COLUMN IF NOT EXISTS setup_command_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+  CREATE TABLE IF NOT EXISTS discord_notification_routes (
+    event_type TEXT PRIMARY KEY CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started')),
+    bot_id BIGINT REFERENCES bots(id) ON DELETE SET NULL,
+    guild_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL
+  );
   CREATE TABLE IF NOT EXISTS discord_notification_outbox (
     id BIGSERIAL PRIMARY KEY,
     event_type TEXT NOT NULL CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started')),
@@ -181,6 +192,76 @@ function readyBot() {
   return botInstances.find(instance => instance.client.isReady())?.client || null;
 }
 
+const setupSlashCommand = new SlashCommandBuilder()
+  .setName('setup')
+  .setDescription('Configura los canales de avisos de MODEOS EL OBI')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+  .toJSON();
+
+async function syncSetupCommand(instance, guildId, enabled) {
+  if (!instance.client.isReady() || !instance.client.application) {
+    throw new Error('El bot debe estar conectado antes de configurar /setup.');
+  }
+  const commands = await instance.client.application.commands.fetch({ guildId });
+  const existingCommand = commands.find(command => command.name === 'setup');
+  if (enabled && !existingCommand) {
+    await instance.client.application.commands.create(setupSlashCommand, guildId);
+  } else if (!enabled && existingCommand) {
+    await instance.client.application.commands.delete(existingCommand.id, guildId);
+  }
+}
+
+async function configureNotificationChannels(instance, guild) {
+  const botMember = guild.members.me || await guild.members.fetchMe();
+  if (!botMember.permissions.has(PermissionFlagsBits.ManageChannels)) {
+    throw new Error('Invita al bot con el permiso Administrar canales y vuelve a intentarlo.');
+  }
+
+  await guild.channels.fetch();
+  let category = guild.channels.cache.find(channel =>
+    channel.type === ChannelType.GuildCategory && channel.name === DISCORD_NOTIFICATION_LAYOUT.categoryName
+  );
+  if (!category) {
+    category = await guild.channels.create({
+      name: DISCORD_NOTIFICATION_LAYOUT.categoryName,
+      type: ChannelType.GuildCategory
+    });
+  }
+
+  const destinations = [];
+  const requiredChannelPermissions = PermissionFlagsBits.ViewChannel
+    | PermissionFlagsBits.SendMessages
+    | PermissionFlagsBits.EmbedLinks;
+  for (const [eventType, definition] of Object.entries(DISCORD_NOTIFICATION_LAYOUT.channels)) {
+    let channel = guild.channels.cache.find(existing =>
+      existing.type === ChannelType.GuildText
+      && existing.parentId === category.id
+      && existing.name === definition.name
+    );
+    if (!channel) {
+      channel = await guild.channels.create({
+        name: definition.name,
+        type: ChannelType.GuildText,
+        parent: category.id,
+        position: definition.position
+      });
+    }
+    if (!channel.permissionsFor(botMember)?.has(requiredChannelPermissions)) {
+      throw new Error(`El bot necesita View Channel, Send Messages y Embed Links en ${channel.name}. Revisa los permisos heredados de la categoría.`);
+    }
+    await database.query(`
+      INSERT INTO discord_notification_routes (event_type, bot_id, guild_id, channel_id)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (event_type) DO UPDATE SET
+        bot_id = EXCLUDED.bot_id,
+        guild_id = EXCLUDED.guild_id,
+        channel_id = EXCLUDED.channel_id
+    `, [eventType, instance.databaseId, guild.id, channel.id]);
+    destinations.push({ eventType, channelId: channel.id, channelName: channel.name });
+  }
+  return { categoryName: category.name, channels: destinations };
+}
+
 function requireDev(request, response, next) {
   if (!process.env.DISCORD_DEV_USER_ID?.trim()) return response.status(503).json({ error: 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.' });
   if (!request.session.discordUser) return response.status(401).json({ error: 'Inicia sesión con Discord.' });
@@ -225,11 +306,18 @@ async function deliverQueuedNotification(notificationId) {
     );
     const queued = rows[0];
     if (!queued || queued.delivered_at) return true;
-    const readyInstances = botInstances.filter(instance => instance.client.isReady());
-    if (!readyInstances.length) throw new Error('Ningun bot esta conectado.');
-
     const notification = parseQueuedNotification(queued);
-    const channelId = configuredNotificationChannel(notification);
+    const { rows: routeRows } = await database.query(
+      'SELECT bot_id, channel_id FROM discord_notification_routes WHERE event_type = $1',
+      [notification.type]
+    );
+    const route = routeRows[0];
+    const readyInstances = route
+      ? botInstances.filter(instance => instance.databaseId === route.bot_id && instance.client.isReady())
+      : botInstances.filter(instance => instance.client.isReady());
+    if (!readyInstances.length) throw new Error(route ? 'El bot configurado para esta notificacion no esta conectado.' : 'Ningun bot esta conectado.');
+
+    const channelId = route?.channel_id || configuredNotificationChannel(notification);
     if (!channelId || !/^\d{17,20}$/.test(channelId)) {
       throw new Error(`Falta un ID valido para ${notificationChannelEnvironment(notification)}.`);
     }
@@ -289,7 +377,11 @@ async function retryPendingNotifications() {
   `);
   for (const row of rows) {
     const notification = parseQueuedNotification(row);
-    if (configuredNotificationChannel(notification)) await deliverQueuedNotification(row.id);
+    const { rows: routeRows } = await database.query(
+      'SELECT 1 FROM discord_notification_routes WHERE event_type = $1',
+      [notification.type]
+    );
+    if (routeRows.length || configuredNotificationChannel(notification)) await deliverQueuedNotification(row.id);
   }
 }
 
@@ -333,41 +425,86 @@ app.use(session({
   }
 }));
 
-app.get('/auth/discord', (request, response) => {
+app.get(['/api/auth/discord', '/auth/discord'], (request, response) => {
   if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) return response.status(503).send('Discord OAuth no está configurado.');
   const state = crypto.randomBytes(24).toString('hex');
   request.session.oauthState = state;
-  const query = new URLSearchParams({
+  const authorizationUrl = new URL('https://discord.com/api/oauth2/authorize');
+  authorizationUrl.search = new URLSearchParams({
     client_id: process.env.DISCORD_CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'identify guilds',
     state
-  });
+  }).toString();
   request.session.save(error => {
     if (error) {
       console.error('[OAUTH] No se pudo guardar el state:', error);
       return response.status(500).send('No se pudo iniciar la sesión de Discord.');
     }
-    response.redirect(`https://discord.com/oauth2/authorize?${query}`);
+    response.redirect(authorizationUrl.toString());
   });
 });
 
 app.get(['/api/auth/discord/callback', '/auth/discord/callback'], async (request, response) => {
+  const code = typeof request.query.code === 'string' ? request.query.code : '';
+  if (request.query.error) {
+    console.error('[OAUTH] Discord devolvió un error durante la autorización:', {
+      error: request.query.error,
+      description: request.query.error_description
+    });
+    return response.status(401).send('No se autorizó el acceso con Discord.');
+  }
+  if (!code) {
+    console.error('[OAUTH] El callback no recibió el parámetro code.');
+    return response.status(400).send('Discord no devolvió el código de autorización.');
+  }
+  if (!request.session?.oauthState || request.query.state !== request.session.oauthState) {
+    console.error('[OAUTH] El callback recibió un state ausente o inválido.');
+    return response.status(400).send('Estado OAuth inválido. Inicia sesión de nuevo.');
+  }
+  if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) {
+    console.error('[OAUTH] Faltan DISCORD_CLIENT_ID o DISCORD_CLIENT_SECRET.');
+    return response.status(503).send('Discord OAuth no está configurado.');
+  }
+
+  let oauthStage = 'intercambio del código por token';
   try {
-    if (!request.query.code || request.query.state !== request.session.oauthState) return response.status(400).send('Estado OAuth inválido.');
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, client_secret: process.env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code: request.query.code, redirect_uri: redirectUri })
+      body: new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, client_secret: process.env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code, redirect_uri: redirectUri })
     });
     const token = await tokenResponse.json();
-    if (!tokenResponse.ok || !token.access_token) return response.status(401).send('Discord no devolvió un token válido. Revisa Client ID, Client Secret y Redirect URI.');
+    if (!tokenResponse.ok || !token.access_token) {
+      console.error('[OAUTH] Discord rechazó el intercambio del código:', {
+        status: tokenResponse.status,
+        error: token.error,
+        description: token.error_description
+      });
+      return response.status(401).send('Discord no devolvió un token válido. Revisa Client ID, Client Secret y Redirect URI.');
+    }
+    oauthStage = 'consulta del perfil de Discord @me';
     const userResponse = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${token.access_token}` } });
-    if (!userResponse.ok) return response.status(401).send('Discord no pudo validar el perfil autorizado. Inténtalo de nuevo.');
+    if (!userResponse.ok) {
+      const errorBody = await userResponse.text();
+      console.error('[OAUTH] Discord rechazó la consulta del perfil @me:', {
+        status: userResponse.status,
+        body: errorBody.slice(0, 1000)
+      });
+      return response.status(401).send('Discord no pudo validar el perfil autorizado. Inténtalo de nuevo.');
+    }
     const user = await userResponse.json();
+    oauthStage = 'consulta de servidores autorizados';
     const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', { headers: { Authorization: `Bearer ${token.access_token}` } });
-    if (!guildsResponse.ok) return response.status(502).send('Se autorizó la cuenta, pero Discord no devolvió la lista de servidores.');
+    if (!guildsResponse.ok) {
+      const errorBody = await guildsResponse.text();
+      console.error('[OAUTH] Discord rechazó la consulta de servidores:', {
+        status: guildsResponse.status,
+        body: errorBody.slice(0, 1000)
+      });
+      return response.status(502).send('Se autorizó la cuenta, pero Discord no devolvió la lista de servidores.');
+    }
     const guilds = await guildsResponse.json();
     request.session.regenerate(error => {
       if (error) {
@@ -386,7 +523,7 @@ app.get(['/api/auth/discord/callback', '/auth/discord/callback'], async (request
       });
     });
   } catch (error) {
-    console.error('[OAUTH]', error);
+    console.error(`[OAUTH] Falló la etapa de ${oauthStage}:`, error);
     response.status(500).send('No se pudo completar el acceso con Discord.');
   }
 });
@@ -424,11 +561,196 @@ app.get('/api/health', asyncRoute(async (_request, response) => {
   });
 }));
 app.get('/api/bots', asyncRoute(async (_request, response) => {
-  const { rows } = await database.query('SELECT id, bot_name, discord_user_id, status FROM bots ORDER BY id');
+  const { rows } = await database.query('SELECT id, bot_name, discord_user_id, status, managed_token, setup_command_enabled FROM bots ORDER BY id');
   response.json(rows.map(({ discord_user_id: userId, ...entry }) => ({
     ...entry,
     connected: botInstances.some(instance => instance.client.isReady() && instance.client.user?.id === userId)
   })));
+}));
+app.post('/api/dev/bots', requireDev, asyncRoute(async (request, response) => {
+  const token = typeof request.body?.token === 'string' ? request.body.token.trim() : '';
+  if (!token || token.length > 512) return response.status(400).json({ error: 'Introduce un token de bot válido.' });
+  if (!process.env.DISCORD_BOT_TOKEN_ENCRYPTION_KEY || process.env.DISCORD_BOT_TOKEN_ENCRYPTION_KEY.length < 32) {
+    return response.status(503).json({ error: 'Configura DISCORD_BOT_TOKEN_ENCRYPTION_KEY (mínimo 32 caracteres) en Render antes de añadir bots.' });
+  }
+
+  let discordResponse;
+  try {
+    discordResponse = await fetch('https://discord.com/api/users/@me', {
+      headers: { Authorization: `Bot ${token}` }
+    });
+  } catch (error) {
+    console.error('[BOT] No se pudo validar el token del bot con Discord:', error);
+    return response.status(502).json({ error: 'No se pudo validar el token con Discord. Inténtalo de nuevo.' });
+  }
+  if (!discordResponse.ok) return response.status(401).json({ error: 'Discord rechazó el token. Comprueba que sea el token de un bot válido.' });
+  const discordUser = await discordResponse.json();
+  if (!discordUser.bot || !discordUser.id || !discordUser.username) {
+    return response.status(400).json({ error: 'El token no pertenece a una cuenta bot de Discord.' });
+  }
+  const duplicate = await database.query('SELECT id FROM bots WHERE discord_user_id = $1', [discordUser.id]);
+  if (duplicate.rowCount) return response.status(409).json({ error: 'Este bot ya está registrado.' });
+
+  const botName = `${discordUser.username} (${discordUser.id})`;
+  const encryptedToken = encryptBotToken(token, process.env.DISCORD_BOT_TOKEN_ENCRYPTION_KEY);
+  const { rows } = await database.query(`
+    INSERT INTO bots (bot_name, discord_user_id, encrypted_token, managed_token)
+    VALUES ($1, $2, $3, TRUE)
+    RETURNING id, bot_name, status
+  `, [botName, discordUser.id, encryptedToken]);
+  startBotInstance({ name: botName, token }, rows[0].id);
+  await logSecurity('discord_bot_added', request, { botId: rows[0].id, discordUserId: discordUser.id });
+  response.status(201).json({ ...rows[0], connected: false, managed_token: true });
+}));
+app.delete('/api/dev/bots/:botId', requireDev, asyncRoute(async (request, response) => {
+  if (!/^\d+$/.test(request.params.botId)) return response.status(400).json({ error: 'Identificador de bot no válido.' });
+  const { rows } = await database.query('SELECT id, bot_name, managed_token FROM bots WHERE id = $1', [request.params.botId]);
+  const bot = rows[0];
+  if (!bot) return response.status(404).json({ error: 'No se encontró ese bot.' });
+  if (!bot.managed_token) return response.status(400).json({ error: 'Este bot se administra desde las variables de entorno y no puede quitarse desde el panel.' });
+  await database.query('DELETE FROM discord_notification_routes WHERE bot_id = $1', [bot.id]);
+  await database.query('DELETE FROM bots WHERE id = $1', [bot.id]);
+  const instanceIndex = botInstances.findIndex(instance => instance.databaseId === bot.id);
+  if (instanceIndex >= 0) {
+    const [instance] = botInstances.splice(instanceIndex, 1);
+    instance.removed = true;
+    clearTimeout(instance.retryTimer);
+    instance.client.destroy();
+  }
+  await logSecurity('discord_bot_removed', request, { botId: bot.id });
+  await broadcastBotCatalogUpdate();
+  response.json({ ok: true, botId: bot.id });
+}));
+app.get('/api/dev/bots/:botId/guilds', requireDev, asyncRoute(async (request, response) => {
+  if (!/^\d+$/.test(request.params.botId)) return response.status(400).json({ error: 'Identificador de bot no válido.' });
+  const instance = botInstances.find(bot => String(bot.databaseId) === request.params.botId);
+  if (!instance) return response.status(404).json({ error: 'No se encontró ese bot.' });
+  if (!instance.client.isReady()) return response.status(503).json({ error: 'El bot todavía no está conectado. Actualiza cuando aparezca como conectado.' });
+  response.json(instance.client.guilds.cache.map(guild => ({ id: guild.id, name: guild.name })).sort((a, b) => a.name.localeCompare(b.name)));
+}));
+app.put('/api/dev/bots/:botId/setup-command', requireDev, asyncRoute(async (request, response) => {
+  if (!/^\d+$/.test(request.params.botId) || typeof request.body?.enabled !== 'boolean') {
+    return response.status(400).json({ error: 'Bot o estado de /setup no válido.' });
+  }
+  const { rows } = await database.query(
+    'SELECT id, bot_name FROM bots WHERE id = $1',
+    [request.params.botId]
+  );
+  if (!rows[0]) return response.status(404).json({ error: 'No se encontró ese bot.' });
+  const instance = botInstances.find(bot => String(bot.databaseId) === request.params.botId);
+  if (!instance || !instance.client.isReady()) {
+    return response.status(503).json({ error: 'El bot debe estar conectado para registrar /setup.' });
+  }
+  await database.query('UPDATE bots SET setup_command_enabled = $1 WHERE id = $2', [request.body.enabled, rows[0].id]);
+  instance.setupCommandEnabled = request.body.enabled;
+  const guildResults = [];
+  for (const guild of instance.client.guilds.cache.values()) {
+    try {
+      await syncSetupCommand(instance, guild.id, request.body.enabled);
+      guildResults.push(guild.name);
+    } catch (error) {
+      console.error(`[BOT] No se pudo ${request.body.enabled ? 'registrar' : 'quitar'} /setup en ${guild.name}:`, error);
+    }
+  }
+  if (guildResults.length !== instance.client.guilds.cache.size) {
+    return response.status(502).json({
+      error: `No se pudo actualizar /setup en todos los servidores. Actualizado en ${guildResults.length} de ${instance.client.guilds.cache.size}; revisa los permisos y vuelve a guardar.`,
+      guilds: guildResults
+    });
+  }
+  await logSecurity('discord_setup_command_toggled', request, { botId: rows[0].id, enabled: request.body.enabled });
+  response.json({ id: rows[0].id, bot_name: rows[0].bot_name, enabled: request.body.enabled, guildCount: guildResults.length });
+}));
+app.get('/api/dev/bots/:botId/guilds/:guildId/channels', requireDev, asyncRoute(async (request, response) => {
+  if (!/^\d+$/.test(request.params.botId) || !/^\d{17,20}$/.test(request.params.guildId)) {
+    return response.status(400).json({ error: 'Bot o servidor no válido.' });
+  }
+  const instance = botInstances.find(bot => String(bot.databaseId) === request.params.botId);
+  if (!instance?.client.isReady()) return response.status(503).json({ error: 'El bot todavía no está conectado.' });
+  const guild = instance.client.guilds.cache.get(request.params.guildId);
+  if (!guild) return response.status(404).json({ error: 'El bot no pertenece al servidor seleccionado.' });
+  await guild.channels.fetch();
+  const botMember = guild.members.me || await guild.members.fetchMe();
+  response.json(guild.channels.cache
+    .filter(channel => channel.type === ChannelType.GuildText && channel.permissionsFor(botMember)?.has([
+      PermissionFlagsBits.ViewChannel,
+      PermissionFlagsBits.SendMessages,
+      PermissionFlagsBits.EmbedLinks
+    ]))
+    .map(channel => ({ id: channel.id, name: channel.name }))
+    .sort((a, b) => a.name.localeCompare(b.name)));
+}));
+app.get('/api/dev/bot-notifications', requireDev, asyncRoute(async (_request, response) => {
+  const { rows } = await database.query(`
+    SELECT route.event_type, route.bot_id, route.guild_id, route.channel_id, bot.bot_name
+    FROM discord_notification_routes route
+    LEFT JOIN bots bot ON bot.id = route.bot_id
+    ORDER BY route.event_type
+  `);
+  response.json(rows);
+}));
+app.put('/api/dev/bot-notifications', requireDev, asyncRoute(async (request, response) => {
+  const eventType = String(request.body?.eventType ?? '');
+  const botId = String(request.body?.botId ?? '');
+  const guildId = String(request.body?.guildId ?? '');
+  const channelId = String(request.body?.channelId ?? '');
+  if (!Object.hasOwn(DISCORD_NOTIFICATION_LAYOUT.channels, eventType)
+    || !/^\d+$/.test(botId)
+    || !/^\d{17,20}$/.test(guildId)
+    || !/^\d{17,20}$/.test(channelId)) {
+    return response.status(400).json({ error: 'Selecciona un tipo de aviso, bot, servidor y canal válidos.' });
+  }
+  const instance = botInstances.find(bot => String(bot.databaseId) === botId);
+  if (!instance?.client.isReady()) return response.status(503).json({ error: 'El bot todavía no está conectado.' });
+  const guild = instance.client.guilds.cache.get(guildId);
+  if (!guild) return response.status(404).json({ error: 'El bot no pertenece al servidor seleccionado.' });
+  const channel = guild.channels.cache.get(channelId) || await guild.channels.fetch(channelId);
+  if (!channel || channel.type !== ChannelType.GuildText
+    || !channel.permissionsFor(guild.members.me)?.has([
+      PermissionFlagsBits.ViewChannel,
+      PermissionFlagsBits.SendMessages,
+      PermissionFlagsBits.EmbedLinks
+    ])) {
+    return response.status(400).json({ error: 'El canal debe ser de texto y permitir ver, enviar mensajes e insertar enlaces al bot.' });
+  }
+  await database.query(`
+    INSERT INTO discord_notification_routes (event_type, bot_id, guild_id, channel_id)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (event_type) DO UPDATE SET
+      bot_id = EXCLUDED.bot_id,
+      guild_id = EXCLUDED.guild_id,
+      channel_id = EXCLUDED.channel_id
+  `, [eventType, instance.databaseId, guild.id, channel.id]);
+  await logSecurity('discord_notification_route_updated', request, { eventType, botId: instance.databaseId, guildId, channelId });
+  void retryPendingNotifications().catch(error => console.error('[DISCORD] No se pudieron reintentar las notificaciones:', error));
+  response.json({ eventType, botName: instance.name, guildName: guild.name, channelId: channel.id, channelName: channel.name });
+}));
+app.post('/api/dev/bot-notifications/setup', requireDev, asyncRoute(async (request, response) => {
+  const botId = String(request.body?.botId ?? '');
+  const guildId = String(request.body?.guildId ?? '');
+  if (!/^\d+$/.test(botId) || !/^\d{17,20}$/.test(guildId)) {
+    return response.status(400).json({ error: 'Selecciona un bot y un servidor válidos.' });
+  }
+  const instance = botInstances.find(bot => String(bot.databaseId) === botId);
+  if (!instance) return response.status(404).json({ error: 'No se encontró ese bot.' });
+  if (!instance.client.isReady()) return response.status(503).json({ error: 'El bot todavía no está conectado.' });
+  const guild = instance.client.guilds.cache.get(guildId);
+  if (!guild) return response.status(404).json({ error: 'El bot no pertenece al servidor seleccionado. Invítalo primero y vuelve a actualizar.' });
+  let setup;
+  try {
+    setup = await configureNotificationChannels(instance, guild);
+  } catch (error) {
+    const statusCode = /Administrar canales|permisos heredados/.test(error.message) ? 403 : 502;
+    return response.status(statusCode).json({ error: error.message });
+  }
+
+  await logSecurity('discord_notification_channels_configured', request, {
+    botId: instance.databaseId,
+    guildId: guild.id,
+    channelIds: setup.channels.map(destination => destination.channelId)
+  });
+  void retryPendingNotifications().catch(error => console.error('[DISCORD] No se pudieron reintentar las notificaciones:', error));
+  response.json({ botName: instance.name, guildName: guild.name, ...setup });
 }));
 app.post('/api/dev/bot-status', requireDev, asyncRoute(async (request, response) => {
   const { botId, status } = request.body || {};
@@ -821,31 +1143,113 @@ function sendBotLog(message, level = 'info') {
   for (const response of devLogClients) response.write(payload);
 }
 
-for (const configuredBot of configuredBots) {
+function startBotInstance(configuredBot, databaseId = null) {
   const name = configuredBot.name.trim();
   const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
-  botInstances.push({ name, client });
-  client.once(Events.ClientReady, async readyClient => {
+  const instance = { name, client, databaseId };
+  botInstances.push(instance);
+  let loginRetryDelay = 5_000;
+  client.on(Events.ClientReady, async readyClient => {
+    loginRetryDelay = 5_000;
+    console.info(`[BOT] Conectado exitosamente como ${readyClient.user.tag} (${name}).`);
     sendBotLog(`${name} conectado como ${readyClient.user.tag}.`);
     try {
       const { rows } = await database.query(`
         INSERT INTO bots (bot_name, discord_user_id) VALUES ($1, $2)
         ON CONFLICT (bot_name) DO UPDATE SET discord_user_id = EXCLUDED.discord_user_id
-        RETURNING status
+        RETURNING id, status, setup_command_enabled
       `, [name, readyClient.user.id]);
+      instance.databaseId = rows[0]?.id ?? instance.databaseId;
+      instance.setupCommandEnabled = Boolean(rows[0]?.setup_command_enabled);
       const status = isPlatformStatus(rows[0]?.status) ? rows[0].status : 'beta';
       await syncBotPresence(status, readyClient);
+      if (instance.setupCommandEnabled) {
+        for (const guild of readyClient.guilds.cache.values()) {
+          try {
+            await syncSetupCommand(instance, guild.id, true);
+          } catch (error) {
+            console.error(`[BOT] No se pudo registrar /setup en ${guild.name}:`, error);
+          }
+        }
+      }
       await retryPendingNotifications();
     } catch (error) {
+      console.error(`[BOT] No se pudo completar la sincronizacion inicial de ${name}:`, error);
       sendBotLog(`No se pudo completar la sincronizacion inicial de ${name}: ${error.message}`, 'error');
     }
   });
-  client.on(Events.Error, error => sendBotLog(`${name}: ${error.message}`, 'error'));
+  client.on(Events.Error, error => {
+    console.error(`[BOT] Error de ${name}:`, error);
+    sendBotLog(`${name}: ${error.message}`, 'error');
+  });
+  client.on(Events.GuildCreate, guild => {
+    if (!instance.setupCommandEnabled) return;
+    syncSetupCommand(instance, guild.id, true).catch(error => {
+      console.error(`[BOT] No se pudo registrar /setup al entrar en ${guild.name}:`, error);
+    });
+  });
+  client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isChatInputCommand() || interaction.commandName !== 'setup') return;
+    if (!instance.setupCommandEnabled) {
+      await interaction.reply({ content: 'El comando /setup no está habilitado para este bot.', ephemeral: true });
+      return;
+    }
+    if (!interaction.inGuild() || !interaction.guild) {
+      await interaction.reply({ content: 'Usa /setup dentro del servidor que quieres configurar.', ephemeral: true });
+      return;
+    }
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels)) {
+      await interaction.reply({ content: 'Necesitas el permiso Administrar canales para ejecutar /setup.', ephemeral: true });
+      return;
+    }
+    await interaction.deferReply({ ephemeral: true });
+    try {
+      const setup = await configureNotificationChannels(instance, interaction.guild);
+      sendBotLog(`${name} configuró los canales de avisos en ${interaction.guild.name}.`);
+      void retryPendingNotifications().catch(error => console.error('[DISCORD] No se pudieron reintentar las notificaciones:', error));
+      await interaction.editReply(`Configuración completada en **${interaction.guild.name}**. Canales: ${setup.channels.map(channel => `#${channel.channelName}`).join(', ')}.`);
+    } catch (error) {
+      console.error(`[BOT] /setup falló en ${interaction.guild.name}:`, error);
+      await interaction.editReply(`No se pudo completar el setup: ${error.message}`);
+    }
+  });
   client.on(Events.MessageCreate, message => {
     if (message.author.bot) return;
     sendBotLog(`${name} / ${message.guild?.name || 'DM'} / ${message.author.tag}: ${message.content}`);
   });
-  client.login(configuredBot.token).catch(error => sendBotLog(`No se pudo conectar ${name}: ${error.message}`, 'error'));
+  const connectBot = async () => {
+    if (instance.removed) return;
+    try {
+      await client.login(configuredBot.token);
+    } catch (error) {
+      if (instance.removed) return;
+      const retryDelay = loginRetryDelay;
+      loginRetryDelay = Math.min(loginRetryDelay * 2, 60_000);
+      console.error(`[BOT] No se pudo conectar ${name}; nuevo intento en ${retryDelay / 1000}s:`, error);
+      sendBotLog(`No se pudo conectar ${name}; nuevo intento en ${retryDelay / 1000}s: ${error.message}`, 'error');
+      instance.retryTimer = setTimeout(connectBot, retryDelay);
+    }
+  };
+  void connectBot();
+  return instance;
+}
+
+for (const configuredBot of configuredBots) {
+  startBotInstance(configuredBot);
+}
+const managedBotRecords = await database.query(`
+  SELECT id, bot_name, encrypted_token
+  FROM bots
+  WHERE managed_token = TRUE AND encrypted_token IS NOT NULL
+  ORDER BY id
+`);
+for (const botRecord of managedBotRecords.rows) {
+  try {
+    const token = decryptBotToken(botRecord.encrypted_token, process.env.DISCORD_BOT_TOKEN_ENCRYPTION_KEY);
+    startBotInstance({ name: botRecord.bot_name, token }, botRecord.id);
+  } catch (error) {
+    console.error(`[BOT] No se pudo recuperar de forma segura el token almacenado para ${botRecord.bot_name}:`, error.message);
+  }
 }
 const notificationRetryTimer = setInterval(() => {
   retryPendingNotifications().catch(error => console.error('[DISCORD] Reintento de notificaciones:', error));

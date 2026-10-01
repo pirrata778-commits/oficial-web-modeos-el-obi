@@ -696,6 +696,40 @@
                         <i class="fa-solid fa-lock"></i><span class="font-orbitron">Bloquear</span>
                     </button>
                 </div>
+                <section class="space-y-4 border-b border-white/10 pb-5">
+                    <div>
+                        <h3 class="font-orbitron text-sm font-bold text-white">Añadir bot de Discord</h3>
+                        <p class="text-xs text-gray-400 mt-1">El token se cifra en el servidor y no vuelve a mostrarse. Añade el bot al servidor elegido con permiso para administrar canales.</p>
+                    </div>
+                    <form id="dev-add-bot-form" class="flex flex-col sm:flex-row gap-2">
+                        <label class="sr-only" for="dev-new-bot-token">Token del bot</label>
+                        <input id="dev-new-bot-token" type="password" autocomplete="new-password" maxlength="512" required placeholder="Token privado del bot" class="min-w-0 flex-1 bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                        <button id="dev-add-bot-submit" type="submit" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs">Añadir bot</button>
+                    </form>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="space-y-1 text-xs text-gray-300">
+                            <span>Bot que publicará los avisos</span>
+                            <select id="dev-notification-bot" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white"></select>
+                        </label>
+                        <label class="space-y-1 text-xs text-gray-300">
+                            <span>Servidor destino</span>
+                            <select id="dev-notification-guild" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled>
+                                <option value="">Selecciona un bot conectado</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button id="dev-notification-setup" type="button" class="px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs">Crear y configurar canales</button>
+                        <span id="dev-notification-feedback" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label class="space-y-1 text-xs text-gray-300"><span>Canal de comunicados</span><select id="dev-channel-announcements" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
+                        <label class="space-y-1 text-xs text-gray-300"><span>Canal de estado web</span><select id="dev-channel-status" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
+                        <label class="space-y-1 text-xs text-gray-300"><span>Canal de directos</span><select id="dev-channel-live" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
+                    </div>
+                    <button id="dev-notification-channels-save" type="button" class="px-4 py-2.5 border border-white/20 hover:bg-white/10 text-white rounded-xl text-xs" disabled>Guardar canales seleccionados</button>
+                    <p id="dev-notification-routes" class="text-xs text-gray-400" aria-live="polite"></p>
+                </section>
                 <section class="space-y-3 border-b border-white/10 pb-5">
                     <div class="flex items-center justify-between"><div><h3 class="font-orbitron text-sm font-bold text-white">Gestión de estados de bots</h3><p class="text-xs text-gray-400 mt-1">Los cambios se guardan en Neon. Acceso protegido por la sesión DEV.</p></div><button type="button" onclick="loadDevBots()" class="px-3 py-2 rounded-xl border border-white/15 text-xs text-gray-300">Actualizar</button></div>
                     <div id="dev-bots-list" class="space-y-2" aria-live="polite"></div>
@@ -1000,7 +1034,7 @@
             document.getElementById('mobile-dev-tab-btn')?.classList.add('hidden');
             fetch(`${API_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' })
                 .catch(() => {})
-                .finally(() => { window.location.href = `${API_URL}/auth/discord`; });
+                .finally(() => { window.location.href = `${API_URL}/api/auth/discord`; });
         }
         async function apiRequest(path, options = {}) {
             let response;
@@ -1051,7 +1085,89 @@
             if (!communityBots.length) container.textContent = 'No hay bots registrados.';
         }
 
-        async function loadDevBots() {
+        async function loadDevBotGuilds() {
+            const botSelect = document.getElementById('dev-notification-bot');
+            const guildSelect = document.getElementById('dev-notification-guild');
+            const botId = botSelect.value;
+            guildSelect.replaceChildren();
+            guildSelect.disabled = true;
+            if (!botId) {
+                guildSelect.add(new Option('Selecciona un bot conectado', ''));
+                await loadNotificationChannels();
+                return;
+            }
+            guildSelect.add(new Option('Cargando servidores…', ''));
+            try {
+                const guilds = await apiRequest(`/api/dev/bots/${encodeURIComponent(botId)}/guilds`);
+                guildSelect.replaceChildren();
+                guildSelect.add(new Option(guilds.length ? 'Selecciona un servidor' : 'El bot no está en ningún servidor', ''));
+                guilds.forEach(guild => guildSelect.add(new Option(guild.name, guild.id)));
+                guildSelect.disabled = guilds.length === 0;
+            } catch (error) {
+                guildSelect.replaceChildren();
+                guildSelect.add(new Option(error.message, ''));
+                await loadNotificationChannels();
+            }
+        }
+
+        async function loadNotificationChannels() {
+            const botId = document.getElementById('dev-notification-bot').value;
+            const guildId = document.getElementById('dev-notification-guild').value;
+            const channelIds = {
+                developer_announcement: 'dev-channel-announcements',
+                platform_status: 'dev-channel-status',
+                live_started: 'dev-channel-live'
+            };
+            const selects = Object.values(channelIds).map(id => document.getElementById(id));
+            const saveButton = document.getElementById('dev-notification-channels-save');
+            selects.forEach(select => {
+                select.replaceChildren(new Option('Selecciona un canal', ''));
+                select.disabled = true;
+            });
+            saveButton.disabled = true;
+            if (!botId || !guildId) return;
+            try {
+                const [channels, routes] = await Promise.all([
+                    apiRequest(`/api/dev/bots/${encodeURIComponent(botId)}/guilds/${encodeURIComponent(guildId)}/channels`),
+                    apiRequest('/api/dev/bot-notifications')
+                ]);
+                for (const [eventType, selectId] of Object.entries(channelIds)) {
+                    const select = document.getElementById(selectId);
+                    const matchingRoute = routes.find(route =>
+                        route.event_type === eventType
+                        && String(route.bot_id) === String(botId)
+                        && route.guild_id === guildId
+                    );
+                    channels.forEach(channel => select.add(new Option(`#${channel.name}`, channel.id)));
+                    select.value = matchingRoute?.channel_id || '';
+                    select.disabled = channels.length === 0;
+                }
+                saveButton.disabled = channels.length === 0;
+            } catch (error) {
+                selects.forEach(select => select.replaceChildren(new Option(error.message, '')));
+                document.getElementById('dev-notification-feedback').textContent = error.message;
+            }
+        }
+
+        async function loadNotificationRoutes() {
+            const routesStatus = document.getElementById('dev-notification-routes');
+            if (!routesStatus) return;
+            try {
+                const routes = await apiRequest('/api/dev/bot-notifications');
+                const labels = {
+                    developer_announcement: 'Comunicados',
+                    platform_status: 'Estado web',
+                    live_started: 'Directos'
+                };
+                routesStatus.textContent = routes.length
+                    ? `Avisos configurados: ${routes.map(route => `${labels[route.event_type]} → ${route.bot_name} (servidor ${route.guild_id})`).join(' · ')}`
+                    : 'Aún no hay canales automáticos configurados.';
+            } catch (error) {
+                routesStatus.textContent = `No se pudo leer la configuración de avisos: ${error.message}`;
+            }
+        }
+
+        async function loadDevBots(selectedBotId = '') {
             const list = document.getElementById('dev-bots-list');
             const feedback = document.getElementById('dev-bots-feedback');
             if (!list) return;
@@ -1086,15 +1202,159 @@
                             if (feedback) feedback.textContent = error.message;
                         } finally { select.disabled = false; }
                     });
-                    row.append(name, select); list.append(row);
+                    row.append(name, select);
+                    const setupLabel = document.createElement('label');
+                    setupLabel.className = 'flex items-center gap-2 text-xs text-gray-300';
+                    const setupToggle = document.createElement('input');
+                    setupToggle.type = 'checkbox';
+                    setupToggle.checked = Boolean(bot.setup_command_enabled);
+                    setupToggle.disabled = !bot.connected;
+                    setupToggle.className = 'h-4 w-4 accent-[#00ffcc]';
+                    const setupText = document.createElement('span');
+                    setupText.textContent = 'Comando /setup';
+                    setupToggle.addEventListener('change', async () => {
+                        setupToggle.disabled = true;
+                        try {
+                            const result = await apiRequest(`/api/dev/bots/${encodeURIComponent(bot.id)}/setup-command`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ enabled: setupToggle.checked })
+                            });
+                            bot.setup_command_enabled = result.enabled;
+                            if (feedback) feedback.textContent = `/setup ${result.enabled ? 'activado' : 'desactivado'} en ${result.guildCount} servidor(es).`;
+                        } catch (error) {
+                            setupToggle.checked = Boolean(bot.setup_command_enabled);
+                            if (feedback) feedback.textContent = error.message;
+                        } finally {
+                            setupToggle.disabled = !bot.connected;
+                        }
+                    });
+                    setupLabel.append(setupToggle, setupText);
+                    row.append(setupLabel);
+                    if (bot.managed_token) {
+                        const removeButton = document.createElement('button');
+                        removeButton.type = 'button';
+                        removeButton.className = 'px-3 py-2 rounded-lg border border-red-500/30 text-red-300 text-xs';
+                        removeButton.textContent = 'Quitar bot';
+                        removeButton.addEventListener('click', async () => {
+                            if (!confirm(`¿Quitar ${bot.bot_name} y desconectarlo?`)) return;
+                            removeButton.disabled = true;
+                            try {
+                                await apiRequest(`/api/dev/bots/${encodeURIComponent(bot.id)}`, { method: 'DELETE' });
+                                if (feedback) feedback.textContent = `${bot.bot_name} se ha quitado.`;
+                                await loadDevBots();
+                                renderPublicBots();
+                            } catch (error) {
+                                if (feedback) feedback.textContent = error.message;
+                                removeButton.disabled = false;
+                            }
+                        });
+                        row.append(removeButton);
+                    }
+                    list.append(row);
                 });
                 if (!communityBots.length) list.textContent = 'No hay bots registrados.';
                 if (feedback) feedback.textContent = '';
+                const notificationBot = document.getElementById('dev-notification-bot');
+                const currentSelection = selectedBotId || notificationBot.value;
+                notificationBot.replaceChildren(new Option('Selecciona un bot conectado', ''));
+                communityBots.forEach(bot => {
+                    notificationBot.add(new Option(`${bot.bot_name}${bot.connected ? '' : ' (desconectado)'}`, bot.id));
+                });
+                notificationBot.value = communityBots.some(bot => String(bot.id) === String(currentSelection))
+                    ? String(currentSelection)
+                    : String(communityBots.find(bot => bot.connected)?.id || '');
+                await loadDevBotGuilds();
+                await loadNotificationRoutes();
             } catch (error) {
                 list.textContent = `No se pudieron cargar los controles: ${error.message}`;
                 if (feedback) feedback.textContent = error.message;
             }
         }
+
+        document.getElementById('dev-add-bot-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            const tokenInput = document.getElementById('dev-new-bot-token');
+            const submit = document.getElementById('dev-add-bot-submit');
+            const feedback = document.getElementById('dev-notification-feedback');
+            submit.disabled = true;
+            feedback.textContent = 'Validando y guardando el bot…';
+            try {
+                const bot = await apiRequest('/api/dev/bots', {
+                    method: 'POST',
+                    body: JSON.stringify({ token: tokenInput.value })
+                });
+                tokenInput.value = '';
+                feedback.textContent = `${bot.bot_name} añadido. Espera a que conecte y luego actualiza la lista.`;
+                await loadDevBots(String(bot.id));
+                renderPublicBots();
+            } catch (error) {
+                feedback.textContent = error.message;
+            } finally {
+                submit.disabled = false;
+            }
+        });
+
+        document.getElementById('dev-notification-bot').addEventListener('change', loadDevBotGuilds);
+        document.getElementById('dev-notification-guild').addEventListener('change', loadNotificationChannels);
+        document.getElementById('dev-notification-channels-save').addEventListener('click', async () => {
+            const botId = document.getElementById('dev-notification-bot').value;
+            const guildId = document.getElementById('dev-notification-guild').value;
+            const feedback = document.getElementById('dev-notification-feedback');
+            const saveButton = document.getElementById('dev-notification-channels-save');
+            const channelFields = [
+                ['developer_announcement', 'dev-channel-announcements'],
+                ['platform_status', 'dev-channel-status'],
+                ['live_started', 'dev-channel-live']
+            ];
+            if (channelFields.some(([, id]) => !document.getElementById(id).value)) {
+                feedback.textContent = 'Selecciona un canal para cada tipo de aviso.';
+                return;
+            }
+            saveButton.disabled = true;
+            try {
+                for (const [eventType, id] of channelFields) {
+                    await apiRequest('/api/dev/bot-notifications', {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            eventType,
+                            botId,
+                            guildId,
+                            channelId: document.getElementById(id).value
+                        })
+                    });
+                }
+                feedback.textContent = 'Se guardaron los canales de comunicados, estado web y directos.';
+                await loadNotificationRoutes();
+            } catch (error) {
+                feedback.textContent = `No se pudieron guardar todos los canales: ${error.message}`;
+            } finally {
+                saveButton.disabled = false;
+            }
+        });
+        document.getElementById('dev-notification-setup').addEventListener('click', async () => {
+            const botId = document.getElementById('dev-notification-bot').value;
+            const guildId = document.getElementById('dev-notification-guild').value;
+            const feedback = document.getElementById('dev-notification-feedback');
+            const button = document.getElementById('dev-notification-setup');
+            if (!botId || !guildId) {
+                feedback.textContent = 'Selecciona un bot conectado y un servidor.';
+                return;
+            }
+            button.disabled = true;
+            feedback.textContent = 'Creando o actualizando categoría y canales…';
+            try {
+                const result = await apiRequest('/api/dev/bot-notifications/setup', {
+                    method: 'POST',
+                    body: JSON.stringify({ botId, guildId })
+                });
+                feedback.textContent = `Avisos configurados con ${result.botName} en ${result.guildName}: ${result.channels.map(channel => channel.channelName).join(', ')}.`;
+                await loadNotificationRoutes();
+            } catch (error) {
+                feedback.textContent = error.message;
+            } finally {
+                button.disabled = false;
+            }
+        });
         function closeBetaBanner() {
             const banner = document.getElementById('beta-banner');
             if(banner) banner.style.display = 'none';
@@ -1407,7 +1667,7 @@
         }
 
         function loginDiscord() {
-            window.location.href = `${API_URL}/auth/discord`;
+            window.location.href = `${API_URL}/api/auth/discord`;
         }
 
         async function loadSession() {

@@ -20,6 +20,8 @@ services:
         sync: false
       - key: DISCORD_CLIENT_SECRET
         sync: false
+      - key: DISCORD_BOT_TOKEN_ENCRYPTION_KEY
+        generateValue: true
       - key: DISCORD_BOT_TOKEN
         sync: false
       - key: DISCORD_BOTS_JSON
