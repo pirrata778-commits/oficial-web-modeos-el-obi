@@ -26,14 +26,39 @@ const publicUrl = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || 
 const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || publicUrl;
 const frontendOrigin = frontendUrl ? new URL(frontendUrl).origin : null;
 const backendOrigin = new URL(publicUrl).origin;
+const discordRedirectUri = `${publicUrl}/auth/discord/callback`;
 const { Pool } = pg;
 const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
 const maxSiteImageBytes = 2 * 1024 * 1024;
+let configuredBots = [];
+
+try {
+  configuredBots = process.env.DISCORD_BOTS_JSON
+    ? JSON.parse(process.env.DISCORD_BOTS_JSON)
+    : process.env.DISCORD_BOT_TOKEN
+      ? [{ name: process.env.DISCORD_BOT_NAME || 'MODEOS EL OBI', token: process.env.DISCORD_BOT_TOKEN }]
+      : [];
+} catch {
+  throw new Error('DISCORD_BOTS_JSON debe contener un array JSON de bots.');
+}
+if (!Array.isArray(configuredBots) || configuredBots.some(bot => !bot || typeof bot.name !== 'string' || !bot.name.trim() || typeof bot.token !== 'string' || !bot.token.trim())) {
+  throw new Error('DISCORD_BOTS_JSON debe contener objetos con name y token.');
+}
+if (process.env.DISCORD_BOTS_JSON && configuredBots.length === 0) {
+  throw new Error('DISCORD_BOTS_JSON debe configurar al menos un bot.');
+}
+configuredBots = configuredBots.map(bot => ({ name: bot.name.trim(), token: bot.token.trim() }));
+if (new Set(configuredBots.map(bot => bot.name)).size !== configuredBots.length) {
+  throw new Error('Cada bot configurado debe tener un nombre único.');
+}
+if (new Set(configuredBots.map(bot => bot.token)).size !== configuredBots.length) {
+  throw new Error('Cada instancia debe usar un token de bot distinto.');
+}
 
 if (!process.env.SESSION_SECRET || !process.env.DEV_PASSWORD || !process.env.DATABASE_URL) {
   throw new Error('Faltan SESSION_SECRET, DEV_PASSWORD o DATABASE_URL en .env');
 }
-if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || !process.env.DISCORD_BOT_TOKEN) {
+if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || configuredBots.length === 0) {
   console.warn('[CONFIG] OAuth o bot de Discord todavía no están configurados.');
 }
 
@@ -84,8 +109,10 @@ await database.query(`
   CREATE TABLE IF NOT EXISTS bots (
     id BIGSERIAL PRIMARY KEY,
     bot_name TEXT NOT NULL UNIQUE,
+    discord_user_id TEXT,
     status TEXT NOT NULL DEFAULT 'beta' CHECK (status IN ('activo', 'beta', 'mantenimiento'))
   );
+  ALTER TABLE bots ADD COLUMN IF NOT EXISTS discord_user_id TEXT;
   CREATE TABLE IF NOT EXISTS discord_notification_outbox (
     id BIGSERIAL PRIMARY KEY,
     event_type TEXT NOT NULL CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started')),
@@ -95,7 +122,6 @@ await database.query(`
     delivered_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
-  INSERT INTO bots (bot_name, status) VALUES ('MODEOS EL OBI', 'beta') ON CONFLICT (bot_name) DO NOTHING;
   INSERT INTO site_settings (setting_key, setting_value)
   VALUES ('maintenance', 'false'::jsonb),
          ('maintenance_message', '"Estamos realizando tareas de mantenimiento."'::jsonb),
@@ -108,6 +134,7 @@ app.set('trust proxy', 1);
 const devLogClients = new Set();
 const siteUpdateClients = new Set();
 const notificationDeliveriesInProgress = new Set();
+const botInstances = [];
 
 app.use((request, response, next) => {
   const origin = request.headers.origin;
@@ -145,12 +172,16 @@ async function logSecurity(type, request, details = {}) {
 }
 
 function isAuthorizedDev(request) {
-  const configuredId = process.env.DISCORD_DEV_USER_ID;
-  return Boolean(configuredId && request.session.discordUser?.id === configuredId);
+  const configuredId = process.env.DISCORD_DEV_USER_ID?.trim();
+  return Boolean(configuredId && String(request.session.discordUser?.id ?? '') === String(configuredId));
+}
+
+function readyBot() {
+  return botInstances.find(instance => instance.client.isReady())?.client || null;
 }
 
 function requireDev(request, response, next) {
-  if (!process.env.DISCORD_DEV_USER_ID) return response.status(503).json({ error: 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.' });
+  if (!process.env.DISCORD_DEV_USER_ID?.trim()) return response.status(503).json({ error: 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.' });
   if (!request.session.discordUser) return response.status(401).json({ error: 'Inicia sesión con Discord.' });
   if (!isAuthorizedDev(request)) return response.status(403).json({ error: 'Esta cuenta de Discord no tiene permiso para acceder al panel DEV.' });
   if (!request.session.devAuthenticated) return response.status(401).json({ error: 'Sesión DEV requerida.' });
@@ -193,23 +224,34 @@ async function deliverQueuedNotification(notificationId) {
     );
     const queued = rows[0];
     if (!queued || queued.delivered_at) return true;
-    if (!bot.isReady()) throw new Error('El bot todavia no esta conectado.');
+    const readyInstances = botInstances.filter(instance => instance.client.isReady());
+    if (!readyInstances.length) throw new Error('Ningun bot esta conectado.');
 
     const notification = parseQueuedNotification(queued);
     const channelId = configuredNotificationChannel(notification);
     if (!channelId || !/^\d{17,20}$/.test(channelId)) {
       throw new Error(`Falta un ID valido para ${notificationChannelEnvironment(notification)}.`);
     }
-    const channel = bot.channels.cache.get(channelId) || await bot.channels.fetch(channelId);
-    if (!channel?.isTextBased()) throw new Error('El canal configurado no admite mensajes de texto.');
-
-    await channel.send({ embeds: [createNotificationEmbed(notification)] });
+    let deliveredBy = null;
+    let deliveryError = null;
+    for (const instance of readyInstances) {
+      try {
+        const channel = instance.client.channels.cache.get(channelId) || await instance.client.channels.fetch(channelId);
+        if (!channel?.isTextBased()) throw new Error('El canal configurado no admite mensajes de texto.');
+        await channel.send({ embeds: [createNotificationEmbed(notification)] });
+        deliveredBy = instance.name;
+        break;
+      } catch (error) {
+        deliveryError = error;
+      }
+    }
+    if (!deliveredBy) throw deliveryError || new Error('Ningun bot pudo enviar la notificacion.');
     await database.query(`
       UPDATE discord_notification_outbox
       SET delivered_at = NOW(), last_error = NULL
       WHERE id = $1 AND delivered_at IS NULL
     `, [notificationId]);
-    sendBotLog(`Notificacion ${notification.type} enviada a Discord.`);
+    sendBotLog(`Notificacion ${notification.type} enviada por ${deliveredBy}.`);
     return true;
   } catch (error) {
     try {
@@ -236,7 +278,7 @@ async function queueDiscordNotification(notification) {
 }
 
 async function retryPendingNotifications() {
-  if (!bot.isReady()) return;
+  if (!botInstances.some(instance => instance.client.isReady())) return;
   const { rows } = await database.query(`
     SELECT id, payload
     FROM discord_notification_outbox
@@ -250,14 +292,13 @@ async function retryPendingNotifications() {
   }
 }
 
-async function syncBotPresence(platformStatus) {
-  if (!bot.isReady() || !bot.user) return false;
+async function syncBotPresence(platformStatus, client) {
+  if (!client?.isReady() || !client.user) return false;
   try {
-    await bot.user.setPresence(createBotPresence(platformStatus));
-    sendBotLog(`Presencia sincronizada: ${platformStatus}.`);
+    await client.user.setPresence(createBotPresence(platformStatus));
     return true;
   } catch (error) {
-    sendBotLog(`No se pudo sincronizar la presencia: ${error.message}`, 'error');
+    sendBotLog(`No se pudo sincronizar la presencia de ${client.user.tag}: ${error.message}`, 'error');
     return false;
   }
 }
@@ -297,7 +338,7 @@ app.get('/auth/discord', (request, response) => {
   request.session.oauthState = state;
   const query = new URLSearchParams({
     client_id: process.env.DISCORD_CLIENT_ID,
-    redirect_uri: `${publicUrl}/auth/discord/callback`,
+    redirect_uri: discordRedirectUri,
     response_type: 'code',
     scope: 'identify guilds',
     state
@@ -317,7 +358,7 @@ app.get('/auth/discord/callback', async (request, response) => {
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, client_secret: process.env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code: request.query.code, redirect_uri: `${publicUrl}/auth/discord/callback` })
+      body: new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, client_secret: process.env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code: request.query.code, redirect_uri: discordRedirectUri })
     });
     const token = await tokenResponse.json();
     if (!tokenResponse.ok || !token.access_token) return response.status(401).send('Discord no devolvió un token válido. Revisa Client ID, Client Secret y Redirect URI.');
@@ -350,21 +391,31 @@ app.get('/auth/discord/callback', async (request, response) => {
 });
 
 app.post('/api/auth/logout', (request, response) => request.session.destroy(() => response.json({ ok: true })));
-app.get('/api/auth/me', (request, response) => response.json({ user: request.session.discordUser || null, devAuthorized: isAuthorizedDev(request), devAuthenticated: Boolean(request.session.devAuthenticated && isAuthorizedDev(request)) }));
+app.get('/api/auth/me', (request, response) => {
+  const devAccessConfigured = Boolean(process.env.DISCORD_DEV_USER_ID?.trim());
+  response.json({
+    user: request.session.discordUser || null,
+    devAuthorized: isAuthorizedDev(request),
+    devAuthenticated: Boolean(request.session.devAuthenticated && isAuthorizedDev(request)),
+    devConfigurationError: devAccessConfigured ? null : 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.'
+  });
+});
 app.get('/api/health', asyncRoute(async (_request, response) => {
   const [state, pendingResult] = await Promise.all([
     readSiteState(),
     database.query('SELECT COUNT(*)::int AS total FROM discord_notification_outbox WHERE delivered_at IS NULL')
   ]);
-  const botReady = bot.isReady();
+  const readyInstances = botInstances.filter(instance => instance.client.isReady());
   response.json({
     status: 'ok',
     service: 'modeos-el-obi',
     database: 'connected',
     webUrl: MODEOS_WEB_URL,
     platformStatus: state.platformStatus,
+    bots: botInstances.map(({ name, client }) => ({ name, ready: client.isReady(), userId: client.user?.id || null })),
     bot: {
-      ready: botReady,
+      ready: readyInstances.length > 0,
+      connectedInstances: readyInstances.length,
       pendingNotifications: pendingResult.rows[0].total
     },
     version: process.env.RENDER_GIT_COMMIT || process.env.SOURCE_VERSION || 'local',
@@ -372,27 +423,25 @@ app.get('/api/health', asyncRoute(async (_request, response) => {
   });
 }));
 app.get('/api/bots', asyncRoute(async (_request, response) => {
-  const { rows } = await database.query('SELECT id, bot_name, status FROM bots ORDER BY id');
-  response.json(rows);
+  const { rows } = await database.query('SELECT id, bot_name, discord_user_id, status FROM bots ORDER BY id');
+  response.json(rows.map(({ discord_user_id: userId, ...entry }) => ({
+    ...entry,
+    connected: botInstances.some(instance => instance.client.isReady() && instance.client.user?.id === userId)
+  })));
 }));
 app.post('/api/dev/bot-status', requireDev, asyncRoute(async (request, response) => {
   const { botId, status } = request.body || {};
   if (!/^\d+$/.test(String(botId ?? '')) || !isPlatformStatus(status)) {
     return response.status(400).json({ error: 'botId o status no válido.' });
   }
-  const { rows } = await database.query('SELECT id, bot_name FROM bots WHERE id = $1', [botId]);
+  const { rows } = await database.query('SELECT id, bot_name, discord_user_id FROM bots WHERE id = $1', [botId]);
   if (!rows[0]) return response.status(404).json({ error: 'No se encontró ese bot.' });
-  const previousState = await readSiteState();
-  const nextState = await persistSiteState({
-    maintenance: status === 'mantenimiento',
-    maintenanceMessage: previousState.maintenanceMessage,
-    platformStatus: status,
-    botId
-  });
-  const notification = await notifySiteStateChange(previousState, nextState);
-  await Promise.all([broadcastSiteUpdate(), syncBotPresence(nextState.platformStatus)]);
+  await database.query('UPDATE bots SET status = $1 WHERE id = $2', [status, botId]);
+  const client = botInstances.find(instance => instance.client.user?.id === rows[0].discord_user_id)?.client;
+  if (client) await syncBotPresence(status, client);
+  await broadcastBotCatalogUpdate();
   await logSecurity('bot_status_updated', request, { botId: rows[0].id, status });
-  response.json({ ...rows[0], status: nextState.platformStatus, state: nextState, notification });
+  response.json({ id: rows[0].id, bot_name: rows[0].bot_name, status, connected: Boolean(client?.isReady()) });
 }));
 app.get('/api/discord/guilds', requireDiscordUser, asyncRoute(async (request, response) => {
   if (request.query.refresh === 'true' && request.session.discordAccessToken) {
@@ -412,22 +461,23 @@ app.get('/api/discord/guilds', requireDiscordUser, asyncRoute(async (request, re
     }
   }
 
-  const isBotReady = typeof bot !== 'undefined' && Boolean(bot?.isReady?.());
+  const connectedBots = botInstances.filter(instance => instance.client.isReady());
   const guilds = (request.session.discordGuilds || []).map(guild => ({
     ...guild,
-    botPresent: isBotReady && bot.guilds.cache.has(guild.id)
+    botPresent: connectedBots.some(instance => instance.client.guilds.cache.has(guild.id))
   }));
   response.json(guilds);
 }));
 app.get('/api/config', (_request, response) => {
-  const isReady = typeof bot !== 'undefined' && Boolean(bot?.isReady?.());
+  const configuredBot = readyBot();
+  const isReady = Boolean(configuredBot);
   response.json({
     discordClientId: process.env.DISCORD_CLIENT_ID || null,
     botReady: isReady,
-    botTag: isReady ? bot.user?.tag : null,
-    botUsername: isReady ? bot.user?.username : null,
-    botAvatar: isReady && bot.user ? bot.user.displayAvatarURL() : null,
-    botId: isReady && bot.user ? bot.user.id : (process.env.DISCORD_CLIENT_ID || null)
+    botTag: isReady ? configuredBot.user?.tag : null,
+    botUsername: isReady ? configuredBot.user?.username : null,
+    botAvatar: isReady && configuredBot.user ? configuredBot.user.displayAvatarURL() : null,
+    botId: isReady && configuredBot.user ? configuredBot.user.id : (process.env.DISCORD_CLIENT_ID || null)
   });
 });
 
@@ -447,7 +497,7 @@ async function readSiteState() {
   };
 }
 
-async function persistSiteState({ maintenance, maintenanceMessage, platformStatus, botId = null }) {
+async function persistSiteState({ maintenance, maintenanceMessage, platformStatus }) {
   const requestedStatus = isPlatformStatus(platformStatus) ? platformStatus : 'activo';
   const resolvedStatus = maintenance ? 'mantenimiento' : (requestedStatus === 'mantenimiento' ? 'activo' : requestedStatus);
   await database.query(`
@@ -460,11 +510,6 @@ async function persistSiteState({ maintenance, maintenanceMessage, platformStatu
       updated_at = EXCLUDED.updated_at
   `, [maintenance, maintenanceMessage, resolvedStatus]);
 
-  if (botId) {
-    await database.query('UPDATE bots SET status = $1 WHERE id = $2', [resolvedStatus, botId]);
-  } else {
-    await database.query('UPDATE bots SET status = $1', [resolvedStatus]);
-  }
   return readSiteState();
 }
 
@@ -486,6 +531,11 @@ async function notifySiteStateChange(previous, next) {
 async function broadcastSiteUpdate() {
   const state = await readSiteState();
   const payload = `data: ${JSON.stringify(state)}\n\n`;
+  for (const response of siteUpdateClients) response.write(payload);
+}
+
+async function broadcastBotCatalogUpdate() {
+  const payload = `data: ${JSON.stringify({ type: 'bots_changed' })}\n\n`;
   for (const response of siteUpdateClients) response.write(payload);
 }
 
@@ -525,7 +575,7 @@ app.put('/api/dev/site-state', requireDev, asyncRoute(async (request, response) 
     platformStatus: platformStatus ?? previousState.platformStatus
   });
   const notification = await notifySiteStateChange(previousState, state);
-  await Promise.all([broadcastSiteUpdate(), syncBotPresence(state.platformStatus)]);
+  await broadcastSiteUpdate();
   await logSecurity('site_state_updated', request, { maintenance });
   response.json({ ...state, notification });
 }));
@@ -601,7 +651,7 @@ app.post('/api/integrations/discord/events', asyncRoute(async (request, response
       maintenanceMessage: platformStatus === 'mantenimiento' ? notification.message : previousState.maintenanceMessage,
       platformStatus
     });
-    await Promise.all([broadcastSiteUpdate(), syncBotPresence(state.platformStatus)]);
+    await broadcastSiteUpdate();
   }
 
   const queued = await queueDiscordNotification(notification);
@@ -694,7 +744,7 @@ app.delete('/api/dev/images/:slot', requireDev, asyncRoute(async (request, respo
 }));
 
 app.post('/api/dev/login', asyncRoute(async (request, response) => {
-  if (!process.env.DISCORD_DEV_USER_ID) return response.status(503).json({ error: 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.' });
+  if (!process.env.DISCORD_DEV_USER_ID?.trim()) return response.status(503).json({ error: 'El acceso DEV no está configurado. Falta DISCORD_DEV_USER_ID.' });
   if (!request.session.discordUser) return response.status(401).json({ error: 'Inicia sesión con Discord antes de desbloquear el panel DEV.' });
   if (!isAuthorizedDev(request)) return response.status(403).json({ error: 'Esta cuenta de Discord no tiene permiso para acceder al panel DEV.' });
   const { password } = request.body || {};
@@ -735,12 +785,14 @@ app.post('/api/dev/logout', requireDev, asyncRoute(async (request, response) => 
 }));
 
 app.get('/api/dev/status', requireDev, (_request, response) => {
-  const ready = bot.isReady();
+  const configuredBot = readyBot();
+  const ready = Boolean(configuredBot);
   response.json({
     ready,
-    username: ready ? bot.user.tag : null,
-    ping: ready ? bot.ws.ping : null,
-    guildCount: ready ? bot.guilds.cache.size : 0
+    username: ready ? configuredBot.user.tag : null,
+    ping: ready ? configuredBot.ws.ping : null,
+    guildCount: ready ? configuredBot.guilds.cache.size : 0,
+    bots: botInstances.map(({ name, client }) => ({ name, ready: client.isReady(), ping: client.isReady() ? client.ws.ping : null }))
   });
 });
 
@@ -768,32 +820,44 @@ function sendBotLog(message, level = 'info') {
   for (const response of devLogClients) response.write(payload);
 }
 
-const bot = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
-bot.once(Events.ClientReady, async client => {
-  sendBotLog(`Bot conectado como ${client.user.tag}.`);
-  try {
-    const state = await readSiteState();
-    await database.query('UPDATE bots SET status = $1', [state.platformStatus]);
-    await syncBotPresence(state.platformStatus);
-    await retryPendingNotifications();
-  } catch (error) {
-    sendBotLog(`No se pudo completar la sincronizacion inicial: ${error.message}`, 'error');
-  }
-});
-bot.on(Events.Error, error => sendBotLog(error.message, 'error'));
-bot.on(Events.MessageCreate, message => {
-  if (message.author.bot) return;
-  sendBotLog(`${message.guild?.name || 'DM'} / ${message.author.tag}: ${message.content}`);
-});
+for (const configuredBot of configuredBots) {
+  const name = configuredBot.name.trim();
+  const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+  botInstances.push({ name, client });
+  client.once(Events.ClientReady, async readyClient => {
+    sendBotLog(`${name} conectado como ${readyClient.user.tag}.`);
+    try {
+      const { rows } = await database.query(`
+        INSERT INTO bots (bot_name, discord_user_id) VALUES ($1, $2)
+        ON CONFLICT (bot_name) DO UPDATE SET discord_user_id = EXCLUDED.discord_user_id
+        RETURNING status
+      `, [name, readyClient.user.id]);
+      const status = isPlatformStatus(rows[0]?.status) ? rows[0].status : 'beta';
+      await syncBotPresence(status, readyClient);
+      await retryPendingNotifications();
+    } catch (error) {
+      sendBotLog(`No se pudo completar la sincronizacion inicial de ${name}: ${error.message}`, 'error');
+    }
+  });
+  client.on(Events.Error, error => sendBotLog(`${name}: ${error.message}`, 'error'));
+  client.on(Events.MessageCreate, message => {
+    if (message.author.bot) return;
+    sendBotLog(`${name} / ${message.guild?.name || 'DM'} / ${message.author.tag}: ${message.content}`);
+  });
+  client.login(configuredBot.token).catch(error => sendBotLog(`No se pudo conectar ${name}: ${error.message}`, 'error'));
+}
 const notificationRetryTimer = setInterval(() => {
   retryPendingNotifications().catch(error => console.error('[DISCORD] Reintento de notificaciones:', error));
 }, 60_000);
 notificationRetryTimer.unref();
 const presenceRefreshTimer = setInterval(async () => {
-  if (!bot.isReady()) return;
+  if (!botInstances.some(instance => instance.client.isReady())) return;
   try {
-    const state = await readSiteState();
-    await syncBotPresence(state.platformStatus);
+    const { rows } = await database.query('SELECT discord_user_id, status FROM bots WHERE discord_user_id IS NOT NULL');
+    await Promise.all(rows.map(row => {
+      const client = botInstances.find(instance => instance.client.user?.id === row.discord_user_id)?.client;
+      return client ? syncBotPresence(row.status, client) : false;
+    }));
   } catch (error) {
     console.error('[DISCORD] Reconciliacion de presencia:', error);
   }
@@ -804,25 +868,26 @@ app.post('/api/discord/commands', requireDev, asyncRoute(async (request, respons
   const command = String(request.body?.command || '').trim();
   if (!command) return response.status(400).json({ error: 'Comando vacío.' });
   try {
-    if (!bot.isReady()) return response.status(503).json({ error: 'El bot todavía no está conectado.' });
+    const commandBot = readyBot();
+    if (!commandBot) return response.status(503).json({ error: 'Ningún bot está conectado.' });
     if (command === '!ping') {
-      const output = `Pong: ${bot.ws.ping}ms`;
+      const output = `Pong: ${commandBot.ws.ping}ms`;
       sendBotLog(`Comando !ping ejecutado: ${output}.`);
       return response.json({ output });
     }
     if (command === '!status') {
-      const output = `Bot conectado como ${bot.user.tag} en ${bot.guilds.cache.size} servidores.`;
+      const output = `Bot conectado como ${commandBot.user.tag} en ${commandBot.guilds.cache.size} servidores.`;
       sendBotLog('Comando !status ejecutado.');
       return response.json({ output });
     }
     if (command === '!guilds') {
-      const output = bot.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join('\n') || 'Sin servidores.';
+      const output = commandBot.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join('\n') || 'Sin servidores.';
       sendBotLog('Comando !guilds ejecutado.');
       return response.json({ output });
     }
     const sendMatch = command.match(/^!send\s+(\d+)\s+([\s\S]+)$/);
     if (sendMatch) {
-      const channel = await bot.channels.fetch(sendMatch[1]);
+      const channel = await commandBot.channels.fetch(sendMatch[1]);
       if (!channel?.isTextBased()) return response.status(400).json({ error: 'El canal no es de texto.' });
       await channel.send(sendMatch[2]);
       sendBotLog(`Mensaje enviado al canal ${sendMatch[1]} por la consola DEV.`);
@@ -841,7 +906,14 @@ app.use((error, request, response, next) => {
   if (response.headersSent) return next(error);
   response.status(500).json({ error: 'Error interno del servidor.' });
 });
-app.listen(port, () => console.log(`[WEB] MODEOS EL OBI disponible en ${publicUrl}`));
-
-if (process.env.DISCORD_BOT_TOKEN) bot.login(process.env.DISCORD_BOT_TOKEN).catch(error => console.error('[BOT]', error.message));
+app.listen(port, () => {
+  console.log(`[WEB] MODEOS EL OBI disponible en ${publicUrl}`);
+  console.log(`[CONFIG] Redirect URI de Discord: ${discordRedirectUri}`);
+  console.log(`[CONFIG] Origen CORS del frontend: ${frontendOrigin}; backend: ${backendOrigin}`);
+  if (process.env.DISCORD_DEV_USER_ID?.trim()) {
+    console.log('[CONFIG] DISCORD_DEV_USER_ID configurado.');
+  } else {
+    console.warn('[CONFIG] DISCORD_DEV_USER_ID NO configurado; acceso DEV deshabilitado.');
+  }
+});
 

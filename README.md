@@ -2,11 +2,15 @@
 
 ## Notificaciones Discord
 
-El mismo Web Service de Render mantiene el cliente de Discord conectado. El bot vuelve a conectar automaticamente y sincroniza su presencia con el estado global: `activo`, `beta` o `mantenimiento`. El plan `starter` del Blueprint mantiene el proceso disponible; `/api/health` informa tambien del bot y de los avisos pendientes.
+El mismo Web Service de Render mantiene conectados uno o varios clientes de Discord. Cada instancia vuelve a conectar automaticamente y conserva su estado `activo`, `beta` o `mantenimiento` en Neon. El plan `starter` del Blueprint mantiene el proceso disponible; `/api/health` informa de las instancias y de los avisos pendientes.
 
 La Zona DEV publica automaticamente en Discord los avisos publicos, los cambios de estado y los inicios de directo. Todas las notificaciones son embeds oficiales e incluyen siempre el enlace `https://web-modeos-el-obi.onrender.com`.
 
 Configura `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`. Puedes separar los destinos con `DISCORD_STATUS_CHANNEL_ID` y `DISCORD_LIVE_CHANNEL_ID`; si se omiten, se usa el canal principal. El bot necesita permiso `View Channel`, `Send Messages` y `Embed Links` en esos canales.
+
+Para varias instancias, configura `DISCORD_BOTS_JSON` en Render como un array JSON, por ejemplo `[ {"name":"MODEOS EL OBI", "token":"TOKEN_1"}, {"name":"Bot secundario", "token":"TOKEN_2"} ]`. Cada nombre y token debe ser unico. Si no se define, se admite el formato anterior con `DISCORD_BOT_TOKEN` y, opcionalmente, `DISCORD_BOT_NAME`. Los tokens solo se leen del entorno: nunca se guardan en Neon ni se envian al frontend. Neon registra automaticamente el ID de Discord y el estado de cada instancia al conectarse. El panel DEV cambia el estado individual; el control de estado global de la web es independiente.
+
+Configura `DISCORD_DEV_USER_ID` con el ID numerico de la cuenta Discord autorizada para que las rutas DEV y el desbloqueo por contrasena esten disponibles.
 
 Para eventos emitidos por otro backend, usa `POST /api/integrations/discord/events` con `Content-Type: application/json` y el encabezado `X-Modeos-Webhook-Secret`, cuyo valor debe coincidir con `DISCORD_EVENTS_WEBHOOK_SECRET`.
 

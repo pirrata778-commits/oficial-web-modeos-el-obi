@@ -61,6 +61,7 @@
             #tab-devzone select, #tab-devzone textarea,
             #tab-devzone input:not([type="checkbox"]), #dev-image-slot { width: 100%; min-height: 2.75rem; }
             #dev-bots-list > div { align-items: stretch; }
+            #dev-bots-list select { width: 100%; min-height: 2.75rem; }
             #dev-bots-list strong, #public-bots-list strong { min-width: 0; overflow-wrap: anywhere; }
             #public-bots-list > article { align-items: flex-start; flex-direction: column; }
             #bots-grid-container > article { min-width: 0; }
@@ -917,8 +918,11 @@
 
     <!-- Lógica de la plataforma -->
     <script>
-        const configuredApiBase = document.querySelector('meta[name="api-base-url"]').content.trim();
-        const API_URL = (configuredApiBase || 'https://web-modeos-el-obi-backend.onrender.com').replace(/\/$/, '');
+        const configuredApiBase = document.querySelector('meta[name="api-base-url"]')?.content.trim();
+        const isLocalHost = window.location.hostname === 'localhost'
+            || window.location.hostname === '127.0.0.1'
+            || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(window.location.hostname);
+        const API_URL = (isLocalHost ? window.location.origin : configuredApiBase || window.location.origin).replace(/\/$/, '');
         let currentUser = null;
         let isDevUnlocked = false;
         let isDevAuthorized = false;
@@ -1040,7 +1044,7 @@
                 const status = document.createElement('span');
                 status.className = 'text-xs font-bold text-gray-200';
                 const [icon, label] = labels[bot.status] || ['⚪', bot.status];
-                status.textContent = `${icon} ${label}`;
+                status.textContent = `${icon} ${label}${bot.connected ? ' · Conectado' : ''}`;
                 card.append(name, status);
                 container.append(card);
             });
@@ -1060,7 +1064,7 @@
                     row.className = 'flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/40 border border-white/10 rounded-xl p-3';
                     const name = document.createElement('strong');
                     name.className = 'text-sm text-white';
-                    name.textContent = `${bot.bot_name} · #${bot.id}`;
+                    name.textContent = `${bot.bot_name} · #${bot.id} · ${bot.connected ? 'Conectado' : 'Desconectado'}`;
                     const select = document.createElement('select');
                     select.className = 'bg-[#05050b] border border-white/20 rounded-lg px-3 py-2 text-white text-xs';
                     [['activo','Activo'], ['beta','Beta'], ['mantenimiento','Mantenimiento']].forEach(([value, label]) => {
@@ -1205,6 +1209,10 @@
                     const update = JSON.parse(event.data);
                     if (update.type === 'connected') {
                         loadSiteState();
+                        return;
+                    }
+                    if (update.type === 'bots_changed') {
+                        loadBots();
                         return;
                     }
                     siteState = update;
