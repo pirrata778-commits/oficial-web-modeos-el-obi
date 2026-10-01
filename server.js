@@ -26,7 +26,7 @@ const publicUrl = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || 
 const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || publicUrl;
 const frontendOrigin = frontendUrl ? new URL(frontendUrl).origin : null;
 const backendOrigin = new URL(publicUrl).origin;
-const discordRedirectUri = `${publicUrl}/auth/discord/callback`;
+const discordRedirectUri = `${publicUrl}/api/auth/discord/callback`;
 const { Pool } = pg;
 const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
 const maxSiteImageBytes = 2 * 1024 * 1024;
@@ -352,7 +352,7 @@ app.get('/auth/discord', (request, response) => {
   });
 });
 
-app.get('/auth/discord/callback', async (request, response) => {
+app.get(['/api/auth/discord/callback', '/auth/discord/callback'], async (request, response) => {
   try {
     if (!request.query.code || request.query.state !== request.session.oauthState) return response.status(400).send('Estado OAuth inválido.');
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
@@ -916,4 +916,3 @@ app.listen(port, () => {
     console.warn('[CONFIG] DISCORD_DEV_USER_ID NO configurado; acceso DEV deshabilitado.');
   }
 });
-

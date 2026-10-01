@@ -46,7 +46,7 @@ Los avisos se guardan primero en una cola PostgreSQL. Si el bot o Discord estan 
 2. Ejecuta `npm install`.
 3. Copia `.env.example` a `.env` y completa los valores.
 4. En Discord Developer Portal configura como redirect URI:
-   `http://localhost:3000/auth/discord/callback`
+   `http://localhost:3000/api/auth/discord/callback`
 5. Invita el bot con los permisos e intents necesarios.
 6. Ejecuta `npm start` y abre `http://localhost:3000`.
 
@@ -78,7 +78,7 @@ Las páginas legales contienen campos entre corchetes que debe completar y revis
 3. En el Web Service define `PUBLIC_URL` con `https://web-modeos-el-obi.onrender.com` y usa esa misma URL en `FRONTEND_URL`.
 4. En Render, `index.html` detecta su propio origen como `API_URL`. Si alojas el frontend en otro dominio, configura el backend en `<meta name="api-base-url" content="https://TU-DOMINIO-BACKEND">`; las cookies entre dominios pueden bloquearse, por eso se recomienda el origen único.
 5. En Discord Developer Portal añade como redirect URI, usando el dominio exacto del Web Service:
-   `https://web-modeos-el-obi.onrender.com/auth/discord/callback`
+   `https://web-modeos-el-obi.onrender.com/api/auth/discord/callback`
 6. Completa en ese mismo servicio Render `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DEV_PASSWORD`, `SESSION_SECRET` y `DATABASE_URL`.
 7. El servicio usa el puerto asignado por Render automáticamente. PostgreSQL se conecta mediante `DATABASE_URL`; no se necesita disco persistente para la base de datos.
 
