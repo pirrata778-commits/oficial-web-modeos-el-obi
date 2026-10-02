@@ -944,7 +944,7 @@
                 <h3 class="font-orbitron text-lg font-bold text-white flex items-center"><i class="fa-solid fa-shield-halved text-[#9d00ff] mr-2"></i>Zona DEV</h3>
                 <button onclick="closeDevModal()" class="text-gray-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <p id="dev-modal-desc" class="text-xs text-gray-300">Introduce la contraseña de administrador:</p>
+            <p id="dev-modal-desc" class="text-xs text-gray-300">Inicia sesión con la cuenta de Discord autorizada y después introduce la contraseña de administrador:</p>
             <input type="password" id="dev-password-input" placeholder="Contraseña" class="w-full bg-[#05050b]/90 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-[#9d00ff] outline-none text-xs">
             <button id="dev-submit-btn" onclick="verifyDevPassword()" class="w-full py-3.5 bg-gradient-to-r from-[#9d00ff] to-purple-600 text-white font-orbitron font-extrabold rounded-xl transition uppercase tracking-wider text-xs">Desbloquear</button>
         </div>
@@ -1173,9 +1173,9 @@
             if (!list) return;
             showLoadingState(list, 'Cargando controles de bots…');
             try {
-                communityBots = await apiRequest('/api/bots');
+                const devBots = await apiRequest('/api/dev/bots');
                 list.replaceChildren();
-                communityBots.forEach(bot => {
+                devBots.forEach(bot => {
                     const row = document.createElement('div');
                     row.className = 'flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/40 border border-white/10 rounded-xl p-3';
                     const name = document.createElement('strong');
@@ -1203,6 +1203,20 @@
                         } finally { select.disabled = false; }
                     });
                     row.append(name, select);
+                    const inviteLink = document.createElement('a');
+                    inviteLink.className = 'px-3 py-2 rounded-lg border border-[#5865F2]/50 text-[#c7cbff] text-xs text-center hover:bg-[#5865F2]/20';
+                    inviteLink.textContent = 'Invitar a servidor';
+                    if (bot.client_id) {
+                        inviteLink.href = `https://discord.com/api/oauth2/authorize?client_id=${encodeURIComponent(bot.client_id)}&permissions=8&scope=bot%20applications.commands`;
+                        inviteLink.target = '_blank';
+                        inviteLink.rel = 'noopener noreferrer';
+                        inviteLink.setAttribute('aria-label', `Invitar a servidor: ${bot.bot_name}`);
+                    } else {
+                        inviteLink.setAttribute('aria-disabled', 'true');
+                        inviteLink.classList.add('opacity-50', 'pointer-events-none');
+                        inviteLink.title = 'Este bot todavía no tiene un Client ID registrado.';
+                    }
+                    row.append(inviteLink);
                     const setupLabel = document.createElement('label');
                     setupLabel.className = 'flex items-center gap-2 text-xs text-gray-300';
                     const setupToggle = document.createElement('input');
@@ -1252,17 +1266,17 @@
                     }
                     list.append(row);
                 });
-                if (!communityBots.length) list.textContent = 'No hay bots registrados.';
+                if (!devBots.length) list.textContent = 'No hay bots registrados.';
                 if (feedback) feedback.textContent = '';
                 const notificationBot = document.getElementById('dev-notification-bot');
                 const currentSelection = selectedBotId || notificationBot.value;
                 notificationBot.replaceChildren(new Option('Selecciona un bot conectado', ''));
-                communityBots.forEach(bot => {
+                devBots.forEach(bot => {
                     notificationBot.add(new Option(`${bot.bot_name}${bot.connected ? '' : ' (desconectado)'}`, bot.id));
                 });
-                notificationBot.value = communityBots.some(bot => String(bot.id) === String(currentSelection))
+                notificationBot.value = devBots.some(bot => String(bot.id) === String(currentSelection))
                     ? String(currentSelection)
-                    : String(communityBots.find(bot => bot.connected)?.id || '');
+                    : String(devBots.find(bot => bot.connected)?.id || '');
                 await loadDevBotGuilds();
                 await loadNotificationRoutes();
             } catch (error) {

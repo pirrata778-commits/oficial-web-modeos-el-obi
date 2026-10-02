@@ -120,9 +120,11 @@ try {
     status TEXT NOT NULL DEFAULT 'beta' CHECK (status IN ('activo', 'beta', 'mantenimiento'))
   );
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS discord_user_id TEXT;
+  ALTER TABLE bots ADD COLUMN IF NOT EXISTS client_id TEXT;
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS encrypted_token TEXT;
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS managed_token BOOLEAN NOT NULL DEFAULT FALSE;
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS setup_command_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+  UPDATE bots SET client_id = discord_user_id WHERE client_id IS NULL AND discord_user_id IS NOT NULL;
   CREATE TABLE IF NOT EXISTS discord_notification_routes (
     event_type TEXT PRIMARY KEY CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started')),
     bot_id BIGINT REFERENCES bots(id) ON DELETE SET NULL,
@@ -266,7 +268,12 @@ async function configureNotificationChannels(instance, guild) {
 }
 
 function requireDev(request, response, next) {
-  if (!request.session.devAuthenticated) return response.status(401).json({ error: 'Sesión DEV requerida.' });
+  const developerId = process.env.DISCORD_DEV_USER_ID;
+  if (!developerId) return response.status(503).json({ error: 'El acceso DEV no está configurado. Define DISCORD_DEV_USER_ID.' });
+  if (request.session.devAuthenticatedUserId !== developerId
+    || request.session.discordUser?.id !== developerId) {
+    return response.status(401).json({ error: 'Acceso DEV no autorizado para esta cuenta de Discord.' });
+  }
   next();
 }
 function requireDiscordUser(request, response, next) {
@@ -530,9 +537,14 @@ app.get(['/api/auth/discord/callback', '/auth/discord/callback'], async (request
 
 app.post('/api/auth/logout', (request, response) => request.session.destroy(() => response.json({ ok: true })));
 app.get('/api/auth/me', (request, response) => {
+  const developerId = process.env.DISCORD_DEV_USER_ID;
   response.json({
     user: request.session.discordUser || null,
-    devAuthenticated: Boolean(request.session.devAuthenticated)
+    devAuthenticated: Boolean(
+      developerId
+      && request.session.devAuthenticatedUserId === developerId
+      && request.session.discordUser?.id === developerId
+    )
   });
 });
 app.get('/api/health', asyncRoute(async (_request, response) => {
@@ -558,7 +570,18 @@ app.get('/api/health', asyncRoute(async (_request, response) => {
   });
 }));
 app.get('/api/bots', asyncRoute(async (_request, response) => {
-  const { rows } = await database.query('SELECT id, bot_name, discord_user_id, status, managed_token, setup_command_enabled FROM bots ORDER BY id');
+  const { rows } = await database.query('SELECT id, bot_name, discord_user_id, status FROM bots ORDER BY id');
+  response.json(rows.map(({ discord_user_id: userId, ...entry }) => ({
+    ...entry,
+    connected: botInstances.some(instance => instance.client.isReady() && instance.client.user?.id === userId)
+  })));
+}));
+app.get('/api/dev/bots', requireDev, asyncRoute(async (_request, response) => {
+  const { rows } = await database.query(`
+    SELECT id, bot_name, client_id, status, managed_token, setup_command_enabled, discord_user_id
+    FROM bots
+    ORDER BY id
+  `);
   response.json(rows.map(({ discord_user_id: userId, ...entry }) => ({
     ...entry,
     connected: botInstances.some(instance => instance.client.isReady() && instance.client.user?.id === userId)
@@ -591,9 +614,9 @@ app.post('/api/dev/bots', requireDev, asyncRoute(async (request, response) => {
   const botName = `${discordUser.username} (${discordUser.id})`;
   const encryptedToken = encryptBotToken(token, process.env.DISCORD_BOT_TOKEN_ENCRYPTION_KEY);
   const { rows } = await database.query(`
-    INSERT INTO bots (bot_name, discord_user_id, encrypted_token, managed_token)
-    VALUES ($1, $2, $3, TRUE)
-    RETURNING id, bot_name, status
+    INSERT INTO bots (bot_name, discord_user_id, client_id, encrypted_token, managed_token)
+    VALUES ($1, $2, $2, $3, TRUE)
+    RETURNING id, bot_name, client_id, status
   `, [botName, discordUser.id, encryptedToken]);
   startBotInstance({ name: botName, token }, rows[0].id);
   await logSecurity('discord_bot_added', request, { botId: rows[0].id, discordUserId: discordUser.id });
@@ -1064,6 +1087,11 @@ app.delete('/api/dev/images/:slot', requireDev, asyncRoute(async (request, respo
 }));
 
 app.post('/api/dev/login', asyncRoute(async (request, response) => {
+  const developerId = process.env.DISCORD_DEV_USER_ID;
+  if (!developerId) return response.status(503).json({ error: 'El acceso DEV no está configurado. Define DISCORD_DEV_USER_ID.' });
+  if (request.session.discordUser?.id !== developerId) {
+    return response.status(403).json({ error: 'Inicia sesión con la cuenta de Discord autorizada para acceder al panel DEV.' });
+  }
   const { password } = request.body || {};
   const attemptKey = request.ip;
   const { rows } = await database.query('SELECT * FROM dev_attempts WHERE session_id = $1', [attemptKey]);
@@ -1091,10 +1119,14 @@ app.post('/api/dev/login', asyncRoute(async (request, response) => {
     return response.status(401).json({ error: locked ? 'Máximo de intentos alcanzado.' : 'Contraseña incorrecta.', attemptsRemaining: Math.max(0, 5 - failedAttempts), locked: Boolean(locked) });
   }
   await database.query('UPDATE dev_attempts SET failed_attempts = 0, locked = FALSE, updated_at = $2 WHERE session_id = $1', [attemptKey, now()]);
+  const { discordUser, discordGuilds, discordAccessToken } = request.session;
   await new Promise((resolve, reject) => {
     request.session.regenerate(error => error ? reject(error) : resolve());
   });
-  request.session.devAuthenticated = true;
+  request.session.discordUser = discordUser;
+  request.session.discordGuilds = discordGuilds;
+  request.session.discordAccessToken = discordAccessToken;
+  request.session.devAuthenticatedUserId = developerId;
   await new Promise((resolve, reject) => {
     request.session.save(error => error ? reject(error) : resolve());
   });
@@ -1103,8 +1135,11 @@ app.post('/api/dev/login', asyncRoute(async (request, response) => {
 }));
 
 app.post('/api/dev/logout', requireDev, asyncRoute(async (request, response) => {
-  request.session.devAuthenticated = false;
+  delete request.session.devAuthenticatedUserId;
   await logSecurity('logout', request);
+  await new Promise((resolve, reject) => {
+    request.session.save(error => error ? reject(error) : resolve());
+  });
   response.json({ ok: true });
 }));
 
@@ -1156,8 +1191,10 @@ function startBotInstance(configuredBot, databaseId = null) {
     sendBotLog(`${name} conectado como ${readyClient.user.tag}.`);
     try {
       const { rows } = await database.query(`
-        INSERT INTO bots (bot_name, discord_user_id) VALUES ($1, $2)
-        ON CONFLICT (bot_name) DO UPDATE SET discord_user_id = EXCLUDED.discord_user_id
+        INSERT INTO bots (bot_name, discord_user_id, client_id) VALUES ($1, $2, $2)
+        ON CONFLICT (bot_name) DO UPDATE SET
+          discord_user_id = EXCLUDED.discord_user_id,
+          client_id = EXCLUDED.client_id
         RETURNING id, status, setup_command_enabled
       `, [name, readyClient.user.id]);
       instance.databaseId = rows[0]?.id ?? instance.databaseId;
