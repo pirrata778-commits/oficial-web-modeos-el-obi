@@ -777,6 +777,36 @@
                 </section>
                 <section class="space-y-4 border-t border-white/10 pt-5">
                     <div>
+                        <h3 class="font-orbitron text-sm font-bold text-white">Enlaces de streaming y vídeo</h3>
+                        <p class="text-xs text-gray-400 mt-1">Configura los enlaces globales oficiales de Twitch y YouTube.</p>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <form id="dev-twitch-link-form" data-platform="twitch" class="space-y-3 border border-white/10 rounded-lg p-3">
+                            <label class="block space-y-1 text-xs text-gray-300">
+                                <span>Canal de Twitch</span>
+                                <input id="dev-twitch-url" type="url" maxlength="500" placeholder="https://twitch.tv/tu-canal" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                            </label>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <label class="flex items-center gap-2 text-xs text-gray-300"><input id="dev-twitch-active" type="checkbox" class="h-4 w-4 accent-[#00ffcc]">Activo</label>
+                                <button type="submit" class="px-3 py-2 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-lg text-xs">Guardar Twitch</button>
+                                <span id="dev-twitch-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                            </div>
+                        </form>
+                        <form id="dev-youtube-link-form" data-platform="youtube" class="space-y-3 border border-white/10 rounded-lg p-3">
+                            <label class="block space-y-1 text-xs text-gray-300">
+                                <span>Canal de YouTube</span>
+                                <input id="dev-youtube-url" type="url" maxlength="500" placeholder="https://youtube.com/@tu-canal" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                            </label>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <label class="flex items-center gap-2 text-xs text-gray-300"><input id="dev-youtube-active" type="checkbox" class="h-4 w-4 accent-[#00ffcc]">Activo</label>
+                                <button type="submit" class="px-3 py-2 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-lg text-xs">Guardar YouTube</button>
+                                <span id="dev-youtube-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+                <section class="space-y-4 border-t border-white/10 pt-5">
+                    <div>
                         <h3 class="font-orbitron text-sm font-bold text-white">Mensajes públicos</h3>
                         <p class="text-xs text-gray-400 mt-1">Los avisos publicados aparecen en Lobby para todas las visitas.</p>
                     </div>
@@ -843,14 +873,23 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     <section class="space-y-3">
                         <div class="flex items-center justify-between">
-                            <h3 class="font-orbitron text-sm font-bold text-white">Consola del bot</h3>
-                            <span class="text-[10px] text-gray-400">!ping · !status · !guilds · !send ID mensaje</span>
+                            <h3 class="font-orbitron text-sm font-bold text-white">Comandos por bot</h3>
+                            <button type="button" onclick="loadDevBots()" title="Actualizar comandos" aria-label="Actualizar comandos" class="px-2.5 py-2 text-gray-300 hover:text-white border border-white/15 rounded-lg"><i class="fa-solid fa-rotate"></i></button>
                         </div>
-                        <form id="dev-command-form" class="flex gap-2">
-                            <input type="text" id="dev-console-input" autocomplete="off" placeholder="!ping" aria-label="Comando del bot" class="min-w-0 flex-grow bg-[#05050b] border border-white/20 rounded-xl px-4 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
-                            <button id="dev-command-submit" type="submit" class="px-4 py-3 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs transition shrink-0"><i class="fa-solid fa-play mr-1"></i>Ejecutar</button>
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Comandos disponibles</span><select id="dev-command-bot" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" aria-label="Bot para gestionar comandos"></select></label>
+                        <div id="dev-command-list" class="space-y-2" aria-live="polite"></div>
+                        <form id="dev-command-form" class="space-y-2 border-t border-white/10 pt-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <label class="space-y-1 text-xs text-gray-300"><span>Servidor destino</span><select id="dev-command-guild" required class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white"></select></label>
+                                <label class="space-y-1 text-xs text-gray-300"><span>Acción</span><select id="dev-command-select" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white"></select></label>
+                            </div>
+                            <div id="dev-command-send-fields" class="hidden space-y-2">
+                                <label class="block space-y-1 text-xs text-gray-300"><span>ID del canal del servidor seleccionado</span><input id="dev-command-channel" inputmode="numeric" maxlength="20" placeholder="ID del canal" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs"></label>
+                                <label class="block space-y-1 text-xs text-gray-300"><span>Mensaje</span><textarea id="dev-command-message" maxlength="2000" rows="2" placeholder="Mensaje para enviar" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs"></textarea></label>
+                            </div>
+                            <button id="dev-command-submit" type="submit" class="px-4 py-3 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs transition"><i class="fa-solid fa-play mr-1"></i>Ejecutar en este servidor</button>
                         </form>
-                        <pre id="dev-command-output" class="min-h-24 max-h-48 overflow-auto whitespace-pre-wrap break-words bg-black/70 border border-white/10 rounded-xl p-4 text-xs text-[#00ffcc]" aria-live="polite">Listo para enviar comandos al bot.</pre>
+                        <pre id="dev-command-output" class="min-h-24 max-h-48 overflow-auto whitespace-pre-wrap break-words bg-black/70 border border-white/10 rounded-xl p-4 text-xs text-[#00ffcc]" aria-live="polite">Listo para ejecutar una acción.</pre>
                     </section>
                     <section class="space-y-3">
                         <div class="flex items-center justify-between">
@@ -1046,8 +1085,7 @@
             }
             const result = await response.json().catch(() => ({}));
             const devEndpoint = path.startsWith('/api/dev/')
-                || path === '/api/discord/logs'
-                || path === '/api/discord/commands';
+                || path === '/api/discord/logs';
             if ((response.status === 401 || response.status === 403) && !devEndpoint) redirectToLogin();
             if (!response.ok) throw new Error(result.error || `Error del servidor (${response.status}).`);
             return result;
@@ -1217,33 +1255,6 @@
                         inviteLink.title = 'Este bot todavía no tiene un Client ID registrado.';
                     }
                     row.append(inviteLink);
-                    const setupLabel = document.createElement('label');
-                    setupLabel.className = 'flex items-center gap-2 text-xs text-gray-300';
-                    const setupToggle = document.createElement('input');
-                    setupToggle.type = 'checkbox';
-                    setupToggle.checked = Boolean(bot.setup_command_enabled);
-                    setupToggle.disabled = !bot.connected;
-                    setupToggle.className = 'h-4 w-4 accent-[#00ffcc]';
-                    const setupText = document.createElement('span');
-                    setupText.textContent = 'Comando /setup';
-                    setupToggle.addEventListener('change', async () => {
-                        setupToggle.disabled = true;
-                        try {
-                            const result = await apiRequest(`/api/dev/bots/${encodeURIComponent(bot.id)}/setup-command`, {
-                                method: 'PUT',
-                                body: JSON.stringify({ enabled: setupToggle.checked })
-                            });
-                            bot.setup_command_enabled = result.enabled;
-                            if (feedback) feedback.textContent = `/setup ${result.enabled ? 'activado' : 'desactivado'} en ${result.guildCount} servidor(es).`;
-                        } catch (error) {
-                            setupToggle.checked = Boolean(bot.setup_command_enabled);
-                            if (feedback) feedback.textContent = error.message;
-                        } finally {
-                            setupToggle.disabled = !bot.connected;
-                        }
-                    });
-                    setupLabel.append(setupToggle, setupText);
-                    row.append(setupLabel);
                     if (bot.managed_token) {
                         const removeButton = document.createElement('button');
                         removeButton.type = 'button';
@@ -1279,9 +1290,125 @@
                     : String(devBots.find(bot => bot.connected)?.id || '');
                 await loadDevBotGuilds();
                 await loadNotificationRoutes();
+                await loadDevCommandControls(devBots);
+                await loadDevSocialLinks();
             } catch (error) {
                 list.textContent = `No se pudieron cargar los controles: ${error.message}`;
                 if (feedback) feedback.textContent = error.message;
+            }
+        }
+
+        async function loadDevCommandControls(devBots) {
+            const botSelect = document.getElementById('dev-command-bot');
+            const selectedBotId = botSelect.value;
+            botSelect.replaceChildren(new Option('Selecciona un bot', ''));
+            devBots.forEach(bot => botSelect.add(new Option(`${bot.bot_name}${bot.connected ? '' : ' (desconectado)'}`, bot.id)));
+            const selectedBot = devBots.find(bot => String(bot.id) === String(selectedBotId))
+                || devBots.find(bot => bot.connected)
+                || devBots[0];
+            botSelect.value = selectedBot ? String(selectedBot.id) : '';
+            await loadDevCommandList(selectedBot);
+            await loadDevCommandGuilds(selectedBot);
+        }
+
+        async function loadDevCommandList(bot) {
+            const list = document.getElementById('dev-command-list');
+            const commandSelect = document.getElementById('dev-command-select');
+            list.replaceChildren();
+            commandSelect.replaceChildren();
+            if (!bot) {
+                list.textContent = 'No hay bots registrados.';
+                return;
+            }
+            try {
+                const commands = await apiRequest(`/api/dev/bots/${encodeURIComponent(bot.id)}/commands`);
+                commands.forEach(command => {
+                    const row = document.createElement('label');
+                    row.className = 'flex items-center justify-between gap-3 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-300';
+                    const description = document.createElement('span');
+                    description.textContent = `${command.name === 'setup' ? '/setup' : `!${command.name}`} · ${command.description}`;
+                    const toggle = document.createElement('input');
+                    toggle.type = 'checkbox';
+                    toggle.className = 'h-4 w-4 accent-[#00ffcc]';
+                    toggle.checked = Boolean(command.is_enabled);
+                    toggle.disabled = command.name === 'setup' && !bot.connected;
+                    toggle.setAttribute('aria-label', `Activar ${command.name}`);
+                    toggle.addEventListener('change', async () => {
+                        toggle.disabled = true;
+                        try {
+                            const updated = await apiRequest(`/api/dev/bots/${encodeURIComponent(bot.id)}/commands/${encodeURIComponent(command.name)}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ enabled: toggle.checked })
+                            });
+                            command.is_enabled = updated.enabled;
+                            if (command.name === 'setup') bot.setup_command_enabled = updated.enabled;
+                        } catch (error) {
+                            toggle.checked = Boolean(command.is_enabled);
+                            document.getElementById('dev-bots-feedback').textContent = error.message;
+                        } finally {
+                            toggle.disabled = command.name === 'setup' && !bot.connected;
+                        }
+                    });
+                    row.append(description, toggle);
+                    list.append(row);
+                    commandSelect.add(new Option(command.name === 'setup' ? '/setup' : `!${command.name}`, command.name));
+                });
+            } catch (error) {
+                list.textContent = `No se pudieron cargar los comandos: ${error.message}`;
+            }
+        }
+
+        async function loadDevCommandGuilds(bot) {
+            const guildSelect = document.getElementById('dev-command-guild');
+            guildSelect.replaceChildren(new Option(bot?.connected ? 'Cargando servidores…' : 'Bot desconectado', ''));
+            guildSelect.disabled = true;
+            if (!bot?.connected) return;
+            try {
+                const guilds = await apiRequest(`/api/dev/bots/${encodeURIComponent(bot.id)}/guilds`);
+                guildSelect.replaceChildren(new Option('Selecciona un servidor', ''));
+                guilds.forEach(guild => guildSelect.add(new Option(guild.name, guild.id)));
+                guildSelect.disabled = !guilds.length;
+            } catch (error) {
+                guildSelect.replaceChildren(new Option(error.message, ''));
+            }
+        }
+
+        async function loadDevSocialLinks() {
+            try {
+                const links = await apiRequest('/api/dev/social-links');
+                links.forEach(link => {
+                    const url = document.getElementById(`dev-${link.platform}-url`);
+                    const active = document.getElementById(`dev-${link.platform}-active`);
+                    if (url && active) {
+                        url.value = link.url;
+                        active.checked = Boolean(link.is_active);
+                    }
+                });
+            } catch (error) {
+                ['twitch', 'youtube'].forEach(platform => {
+                    document.getElementById(`dev-${platform}-status`).textContent = `No se pudo leer: ${error.message}`;
+                });
+            }
+        }
+
+        async function saveDevSocialLink(platform) {
+            const status = document.getElementById(`dev-${platform}-status`);
+            const button = document.querySelector(`#dev-${platform}-link-form button[type="submit"]`);
+            button.disabled = true;
+            status.textContent = 'Guardando…';
+            try {
+                const link = await apiRequest(`/api/dev/social-links/${platform}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        url: document.getElementById(`dev-${platform}-url`).value,
+                        is_active: document.getElementById(`dev-${platform}-active`).checked
+                    })
+                });
+                status.textContent = `${link.platform === 'twitch' ? 'Twitch' : 'YouTube'} ${link.is_active ? 'guardado y activo' : 'guardado e inactivo'}.`;
+            } catch (error) {
+                status.textContent = error.message;
+            } finally {
+                button.disabled = false;
             }
         }
 
@@ -2392,20 +2519,25 @@
         }
 
         async function executeDevCommand() {
-            const input = document.getElementById('dev-console-input');
             const output = document.getElementById('dev-command-output');
             const submit = document.getElementById('dev-command-submit');
-            const command = input.value.trim();
-            if (!command) return;
+            const botId = document.getElementById('dev-command-bot').value;
+            const guildId = document.getElementById('dev-command-guild').value;
+            const command = document.getElementById('dev-command-select').value;
+            const channelId = document.getElementById('dev-command-channel').value.trim();
+            const message = document.getElementById('dev-command-message').value.trim();
+            if (!botId || !guildId || !command) {
+                output.textContent = 'Selecciona un bot, un servidor y una acción habilitada.';
+                return;
+            }
             submit.disabled = true;
-            output.textContent = `> ${command}\nEjecutando...`;
+            output.textContent = `> ${command} · ${guildId}\nEjecutando…`;
             try {
-                const result = await apiRequest('/api/discord/commands', {
+                const result = await apiRequest(`/api/dev/bots/${encodeURIComponent(botId)}/commands/${encodeURIComponent(command)}/execute`, {
                     method: 'POST',
-                    body: JSON.stringify({ command })
+                    body: JSON.stringify({ guildId, channelId, message })
                 });
                 output.textContent = `> ${command}\n${result.output}`;
-                input.value = '';
             } catch (error) {
                 output.textContent = `> ${command}\nError: ${error.message}`;
             } finally {
@@ -2416,6 +2548,26 @@
         document.getElementById('dev-command-form').addEventListener('submit', event => {
             event.preventDefault();
             executeDevCommand();
+        });
+        document.getElementById('dev-command-bot').addEventListener('change', async event => {
+            const botId = event.target.value;
+            try {
+                const bots = await apiRequest('/api/dev/bots');
+                const bot = bots.find(entry => String(entry.id) === String(botId));
+                await loadDevCommandList(bot);
+                await loadDevCommandGuilds(bot);
+            } catch (error) {
+                document.getElementById('dev-command-list').textContent = error.message;
+            }
+        });
+        document.getElementById('dev-command-select').addEventListener('change', event => {
+            document.getElementById('dev-command-send-fields').classList.toggle('hidden', event.target.value !== 'send');
+        });
+        ['twitch', 'youtube'].forEach(platform => {
+            document.getElementById(`dev-${platform}-link-form`).addEventListener('submit', event => {
+                event.preventDefault();
+                saveDevSocialLink(platform);
+            });
         });
     </script>
 </body>

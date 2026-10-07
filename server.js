@@ -34,6 +34,13 @@ const { Pool } = pg;
 const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
 const maxSiteImageBytes = 2 * 1024 * 1024;
 let configuredBots = [];
+const devCommandCatalog = [
+  { name: 'ping', description: 'Consultar la latencia del bot' },
+  { name: 'status', description: 'Consultar el estado del bot en el servidor' },
+  { name: 'guilds', description: 'Listar los servidores conectados' },
+  { name: 'send', description: 'Enviar un mensaje a un canal del servidor' },
+  { name: 'setup', description: 'Configurar los canales de avisos del servidor' }
+];
 
 try {
   configuredBots = process.env.DISCORD_BOTS_JSON
@@ -125,6 +132,25 @@ try {
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS managed_token BOOLEAN NOT NULL DEFAULT FALSE;
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS setup_command_enabled BOOLEAN NOT NULL DEFAULT FALSE;
   UPDATE bots SET client_id = discord_user_id WHERE client_id IS NULL AND discord_user_id IS NOT NULL;
+  CREATE TABLE IF NOT EXISTS bot_commands (
+    bot_id BIGINT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+    command_name TEXT NOT NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (bot_id, command_name)
+  );
+  INSERT INTO bot_commands (bot_id, command_name, is_enabled)
+  SELECT existing_bot.id, commands.command_name,
+         CASE WHEN commands.command_name = 'setup' THEN existing_bot.setup_command_enabled ELSE TRUE END
+  FROM bots existing_bot
+  CROSS JOIN (VALUES ('ping'), ('status'), ('guilds'), ('send'), ('setup')) AS commands(command_name)
+  ON CONFLICT (bot_id, command_name) DO NOTHING;
+  CREATE TABLE IF NOT EXISTS streaming_links (
+    platform TEXT PRIMARY KEY CHECK (platform IN ('twitch', 'youtube')),
+    url TEXT NOT NULL DEFAULT '',
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
   CREATE TABLE IF NOT EXISTS discord_notification_routes (
     event_type TEXT PRIMARY KEY CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started')),
     bot_id BIGINT REFERENCES bots(id) ON DELETE SET NULL,
@@ -618,6 +644,12 @@ app.post('/api/dev/bots', requireDev, asyncRoute(async (request, response) => {
     VALUES ($1, $2, $2, $3, TRUE)
     RETURNING id, bot_name, client_id, status
   `, [botName, discordUser.id, encryptedToken]);
+  await database.query(`
+    INSERT INTO bot_commands (bot_id, command_name, is_enabled)
+    SELECT $1, command_name, command_name <> 'setup'
+    FROM unnest(ARRAY['ping', 'status', 'guilds', 'send', 'setup']::TEXT[]) AS commands(command_name)
+    ON CONFLICT (bot_id, command_name) DO NOTHING
+  `, [rows[0].id]);
   startBotInstance({ name: botName, token }, rows[0].id);
   await logSecurity('discord_bot_added', request, { botId: rows[0].id, discordUserId: discordUser.id });
   response.status(201).json({ ...rows[0], connected: false, managed_token: true });
@@ -662,6 +694,11 @@ app.put('/api/dev/bots/:botId/setup-command', requireDev, asyncRoute(async (requ
     return response.status(503).json({ error: 'El bot debe estar conectado para registrar /setup.' });
   }
   await database.query('UPDATE bots SET setup_command_enabled = $1 WHERE id = $2', [request.body.enabled, rows[0].id]);
+  await database.query(`
+    INSERT INTO bot_commands (bot_id, command_name, is_enabled)
+    VALUES ($1, 'setup', $2)
+    ON CONFLICT (bot_id, command_name) DO UPDATE SET is_enabled = EXCLUDED.is_enabled, updated_at = NOW()
+  `, [rows[0].id, request.body.enabled]);
   instance.setupCommandEnabled = request.body.enabled;
   const guildResults = [];
   for (const guild of instance.client.guilds.cache.values()) {
@@ -680,6 +717,139 @@ app.put('/api/dev/bots/:botId/setup-command', requireDev, asyncRoute(async (requ
   }
   await logSecurity('discord_setup_command_toggled', request, { botId: rows[0].id, enabled: request.body.enabled });
   response.json({ id: rows[0].id, bot_name: rows[0].bot_name, enabled: request.body.enabled, guildCount: guildResults.length });
+}));
+app.get('/api/dev/bots/:botId/commands', requireDev, asyncRoute(async (request, response) => {
+  if (!/^\d+$/.test(request.params.botId)) return response.status(400).json({ error: 'Identificador de bot no válido.' });
+  const { rows } = await database.query('SELECT id, setup_command_enabled FROM bots WHERE id = $1', [request.params.botId]);
+  if (!rows[0]) return response.status(404).json({ error: 'No se encontró ese bot.' });
+  const commandStates = await database.query('SELECT command_name, is_enabled FROM bot_commands WHERE bot_id = $1', [rows[0].id]);
+  const stateByName = new Map(commandStates.rows.map(command => [command.command_name, command.is_enabled]));
+  response.json(devCommandCatalog.map(command => ({
+    ...command,
+    is_enabled: command.name === 'setup'
+      ? Boolean(rows[0].setup_command_enabled)
+      : stateByName.get(command.name) ?? true
+  })));
+}));
+app.put('/api/dev/bots/:botId/commands/:commandName', requireDev, asyncRoute(async (request, response) => {
+  const { botId, commandName } = request.params;
+  if (!/^\d+$/.test(botId) || typeof request.body?.enabled !== 'boolean'
+    || !devCommandCatalog.some(command => command.name === commandName)) {
+    return response.status(400).json({ error: 'Bot, comando o estado no válido.' });
+  }
+  const { rows } = await database.query('SELECT id FROM bots WHERE id = $1', [botId]);
+  if (!rows[0]) return response.status(404).json({ error: 'No se encontró ese bot.' });
+  if (commandName === 'setup') {
+    const instance = botInstances.find(bot => String(bot.databaseId) === botId);
+    if (!instance?.client.isReady()) return response.status(503).json({ error: 'El bot debe estar conectado para cambiar el estado de /setup.' });
+    const guildResults = [];
+    for (const guild of instance.client.guilds.cache.values()) {
+      try {
+        await syncSetupCommand(instance, guild.id, request.body.enabled);
+        guildResults.push(guild.name);
+      } catch (error) {
+        console.error(`[BOT] No se pudo actualizar /setup en ${guild.name}:`, error);
+      }
+    }
+    if (guildResults.length !== instance.client.guilds.cache.size) {
+      return response.status(502).json({ error: `No se pudo actualizar /setup en todos los servidores (${guildResults.length}/${instance.client.guilds.cache.size}).` });
+    }
+    await database.query('UPDATE bots SET setup_command_enabled = $1 WHERE id = $2', [request.body.enabled, rows[0].id]);
+    instance.setupCommandEnabled = request.body.enabled;
+  }
+  await database.query(`
+    INSERT INTO bot_commands (bot_id, command_name, is_enabled)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (bot_id, command_name) DO UPDATE SET is_enabled = EXCLUDED.is_enabled, updated_at = NOW()
+  `, [rows[0].id, commandName, request.body.enabled]);
+  await logSecurity('discord_command_toggled', request, { botId: rows[0].id, commandName, enabled: request.body.enabled });
+  response.json({ botId: rows[0].id, commandName, enabled: request.body.enabled });
+}));
+app.post('/api/dev/bots/:botId/commands/:commandName/execute', requireDev, asyncRoute(async (request, response) => {
+  const { botId, commandName } = request.params;
+  const guildId = String(request.body?.guildId || '');
+  if (!/^\d+$/.test(botId) || !/^\d{17,20}$/.test(guildId)
+    || !devCommandCatalog.some(command => command.name === commandName)) {
+    return response.status(400).json({ error: 'Bot, comando o servidor no válido.' });
+  }
+  const botResult = await database.query('SELECT id, setup_command_enabled FROM bots WHERE id = $1', [botId]);
+  if (!botResult.rows[0]) return response.status(404).json({ error: 'No se encontró ese bot.' });
+  const stateResult = await database.query('SELECT is_enabled FROM bot_commands WHERE bot_id = $1 AND command_name = $2', [botResult.rows[0].id, commandName]);
+  const enabled = commandName === 'setup'
+    ? Boolean(botResult.rows[0].setup_command_enabled)
+    : stateResult.rows[0]?.is_enabled ?? true;
+  if (!enabled) return response.status(409).json({ error: `El comando ${commandName} está desactivado para este bot.` });
+  const instance = botInstances.find(bot => String(bot.databaseId) === botId);
+  if (!instance?.client.isReady()) return response.status(503).json({ error: 'El bot no está conectado.' });
+  const guild = instance.client.guilds.cache.get(guildId);
+  if (!guild) return response.status(404).json({ error: 'El bot no pertenece al servidor seleccionado.' });
+
+  let output;
+  if (commandName === 'ping') {
+    output = `Pong: ${instance.client.ws.ping}ms · ${guild.name}`;
+  } else if (commandName === 'status') {
+    output = `${instance.client.user.tag} está conectado en ${guild.name} (${guild.memberCount} miembros).`;
+  } else if (commandName === 'guilds') {
+    output = instance.client.guilds.cache.map(connectedGuild => `${connectedGuild.name} (${connectedGuild.id})`).join('\n') || 'Sin servidores.';
+  } else if (commandName === 'send') {
+    const channelId = String(request.body?.channelId || '');
+    const message = typeof request.body?.message === 'string' ? request.body.message.trim() : '';
+    if (!/^\d{17,20}$/.test(channelId) || !message || message.length > 2000) {
+      return response.status(400).json({ error: 'Indica un canal válido y un mensaje de hasta 2000 caracteres.' });
+    }
+    const channel = await instance.client.channels.fetch(channelId);
+    if (!channel?.isTextBased() || channel.guildId !== guild.id) {
+      return response.status(400).json({ error: 'El canal no es de texto o no pertenece al servidor seleccionado.' });
+    }
+    if (!channel.permissionsFor(instance.client.user)?.has(PermissionFlagsBits.SendMessages)) {
+      return response.status(403).json({ error: 'El bot no tiene permiso para enviar mensajes en ese canal.' });
+    }
+    await channel.send(message);
+    output = `Mensaje enviado a #${channel.name} en ${guild.name}.`;
+  } else {
+    const setup = await configureNotificationChannels(instance, guild);
+    void retryPendingNotifications().catch(error => console.error('[DISCORD] No se pudieron reintentar las notificaciones:', error));
+    output = `Configuración completada en ${guild.name}. Canales: ${setup.channels.map(channel => `#${channel.channelName}`).join(', ')}.`;
+  }
+  sendBotLog(`Comando ${commandName} ejecutado por DEV en ${guild.name}.`);
+  await logSecurity('discord_command_executed', request, { botId: botResult.rows[0].id, commandName, guildId });
+  response.json({ output });
+}));
+app.get('/api/dev/social-links', requireDev, asyncRoute(async (_request, response) => {
+  const { rows } = await database.query(`
+    SELECT platforms.platform, COALESCE(links.url, '') AS url, COALESCE(links.is_active, FALSE) AS is_active
+    FROM (VALUES ('twitch'), ('youtube')) AS platforms(platform)
+    LEFT JOIN streaming_links links ON links.platform = platforms.platform
+    ORDER BY platforms.platform
+  `);
+  response.json(rows);
+}));
+app.put('/api/dev/social-links/:platform', requireDev, asyncRoute(async (request, response) => {
+  const { platform } = request.params;
+  const url = typeof request.body?.url === 'string' ? request.body.url.trim() : '';
+  const isActive = request.body?.is_active;
+  if (!['twitch', 'youtube'].includes(platform) || typeof isActive !== 'boolean' || url.length > 500) {
+    return response.status(400).json({ error: 'Plataforma, enlace o estado no válido.' });
+  }
+  if (isActive) {
+    let parsedUrl;
+    try { parsedUrl = new URL(url); } catch { return response.status(400).json({ error: 'Introduce un enlace válido.' }); }
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const allowedHost = platform === 'twitch'
+      ? hostname === 'twitch.tv' || hostname.endsWith('.twitch.tv')
+      : hostname === 'youtube.com' || hostname.endsWith('.youtube.com') || hostname === 'youtu.be';
+    if (parsedUrl.protocol !== 'https:' || !allowedHost || !parsedUrl.pathname.replaceAll('/', '')) {
+      return response.status(400).json({ error: `El enlace debe ser HTTPS y pertenecer a ${platform === 'twitch' ? 'twitch.tv' : 'youtube.com o youtu.be'}.` });
+    }
+  }
+  const { rows } = await database.query(`
+    INSERT INTO streaming_links (platform, url, is_active)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (platform) DO UPDATE SET url = EXCLUDED.url, is_active = EXCLUDED.is_active, updated_at = NOW()
+    RETURNING platform, url, is_active
+  `, [platform, url, isActive]);
+  await logSecurity('streaming_link_updated', request, { platform, isActive });
+  response.json(rows[0]);
 }));
 app.get('/api/dev/bots/:botId/guilds/:guildId/channels', requireDev, asyncRoute(async (request, response) => {
   if (!/^\d+$/.test(request.params.botId) || !/^\d{17,20}$/.test(request.params.guildId)) {
@@ -1199,6 +1369,12 @@ function startBotInstance(configuredBot, databaseId = null) {
       `, [name, readyClient.user.id]);
       instance.databaseId = rows[0]?.id ?? instance.databaseId;
       instance.setupCommandEnabled = Boolean(rows[0]?.setup_command_enabled);
+      await database.query(`
+        INSERT INTO bot_commands (bot_id, command_name, is_enabled)
+        SELECT $1, command_name, CASE WHEN command_name = 'setup' THEN $2 ELSE TRUE END
+        FROM unnest(ARRAY['ping', 'status', 'guilds', 'send', 'setup']::TEXT[]) AS commands(command_name)
+        ON CONFLICT (bot_id, command_name) DO NOTHING
+      `, [instance.databaseId, instance.setupCommandEnabled]);
       const status = isPlatformStatus(rows[0]?.status) ? rows[0].status : 'beta';
       await syncBotPresence(status, readyClient);
       if (instance.setupCommandEnabled) {
@@ -1311,42 +1487,6 @@ const presenceRefreshTimer = setInterval(async () => {
   }
 }, 5 * 60_000);
 presenceRefreshTimer.unref();
-
-app.post('/api/discord/commands', requireDev, asyncRoute(async (request, response) => {
-  const command = String(request.body?.command || '').trim();
-  if (!command) return response.status(400).json({ error: 'Comando vacío.' });
-  try {
-    const commandBot = readyBot();
-    if (!commandBot) return response.status(503).json({ error: 'Ningún bot está conectado.' });
-    if (command === '!ping') {
-      const output = `Pong: ${commandBot.ws.ping}ms`;
-      sendBotLog(`Comando !ping ejecutado: ${output}.`);
-      return response.json({ output });
-    }
-    if (command === '!status') {
-      const output = `Bot conectado como ${commandBot.user.tag} en ${commandBot.guilds.cache.size} servidores.`;
-      sendBotLog('Comando !status ejecutado.');
-      return response.json({ output });
-    }
-    if (command === '!guilds') {
-      const output = commandBot.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join('\n') || 'Sin servidores.';
-      sendBotLog('Comando !guilds ejecutado.');
-      return response.json({ output });
-    }
-    const sendMatch = command.match(/^!send\s+(\d+)\s+([\s\S]+)$/);
-    if (sendMatch) {
-      const channel = await commandBot.channels.fetch(sendMatch[1]);
-      if (!channel?.isTextBased()) return response.status(400).json({ error: 'El canal no es de texto.' });
-      await channel.send(sendMatch[2]);
-      sendBotLog(`Mensaje enviado al canal ${sendMatch[1]} por la consola DEV.`);
-      return response.json({ output: 'Mensaje enviado correctamente.' });
-    }
-    return response.status(400).json({ error: 'Comando no permitido. Usa !ping, !status, !guilds o !send <channelId> <mensaje>.' });
-  } catch (error) {
-    sendBotLog(error.message, 'error');
-    response.status(500).json({ error: error.message });
-  }
-}));
 
 app.use(express.static(__dirname));
 app.use((error, request, response, next) => {
