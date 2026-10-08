@@ -31,6 +31,12 @@ process.env.PUBLIC_URL = publicUrl;
 const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || publicUrl;
 const frontendOrigin = frontendUrl ? new URL(frontendUrl).origin : null;
 const backendOrigin = new URL(publicUrl).origin;
+const frontendHostname = new URL(frontendUrl).hostname;
+const backendHostname = new URL(publicUrl).hostname;
+const secureSessionCookie = process.env.NODE_ENV === 'production'
+  || Boolean(process.env.RENDER_EXTERNAL_URL)
+  || backendOrigin.startsWith('https://');
+const sessionSameSite = frontendHostname !== backendHostname ? 'none' : 'lax';
 const redirectUri = `${process.env.PUBLIC_URL}/api/auth/discord/callback`;
 const { Pool } = pg;
 const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
@@ -503,8 +509,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    sameSite: frontendOrigin && frontendOrigin !== backendOrigin ? 'none' : 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: sessionSameSite,
+    secure: secureSessionCookie,
     maxAge: 8 * 60 * 60 * 1000
   }
 }));

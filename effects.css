@@ -9,6 +9,80 @@ html {
     scroll-behavior: smooth;
 }
 
+.maintenance-container {
+    animation: fadeInContainer 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInContainer {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.maintenance-icon,
+.tools-icon {
+    animation: floatAndGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes floatAndGlow {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+        filter: drop-shadow(0 0 5px rgba(20, 184, 166, 0.4));
+    }
+    50% {
+        transform: translateY(-8px) rotate(3deg);
+        filter: drop-shadow(0 0 20px rgba(20, 184, 166, 0.8));
+    }
+}
+
+.maintenance-title {
+    animation: titlePulse 3s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; text-shadow: 0 0 25px rgba(20, 184, 166, 0.3); }
+}
+
+.admin-access-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid rgba(20, 184, 166, 0.4) !important;
+    background: rgba(20, 184, 166, 0.03) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.admin-access-btn::before {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(20, 184, 166, 0.2), transparent);
+    content: '';
+    transition: left 0.5s;
+}
+
+.admin-access-btn:hover::before { left: 100%; }
+
+.admin-access-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    border-color: rgba(20, 184, 166, 0.9) !important;
+    background: rgba(20, 184, 166, 0.12) !important;
+    box-shadow: 0 0 25px rgba(20, 184, 166, 0.4), inset 0 0 10px rgba(20, 184, 166, 0.2) !important;
+}
+
+.background-grid { animation: gridMove 20s linear infinite; }
+
+#maintenance-screen { z-index: 1100; }
+#dev-modal { z-index: 1200; }
+
+@keyframes gridMove {
+    from { background-position: 0 0; }
+    to { background-position: 50px 50px; }
+}
+
 .navbar-brand > div:first-child {
     animation: brandFloat 4.5s ease-in-out infinite;
     will-change: transform;
