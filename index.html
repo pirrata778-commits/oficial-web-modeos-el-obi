@@ -1027,18 +1027,49 @@
                         <h3 class="font-orbitron text-sm font-bold text-white">Inicio de directo</h3>
                         <p class="text-xs text-gray-400 mt-1">Publica el aviso oficial de emision en la web y Discord.</p>
                     </div>
-                    <form id="live-event-form" class="space-y-2">
+                    <form id="live-event-form" class="content-config-form space-y-2">
                         <label class="block space-y-1 text-xs text-gray-300">
                             <span>Titulo</span>
-                            <input id="live-event-title" type="text" maxlength="256" value="Estamos en directo" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                            <input id="live-event-title" type="text" maxlength="256" required value="Estamos en directo" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
                         </label>
                         <label class="block space-y-1 text-xs text-gray-300">
                             <span>Mensaje</span>
-                            <textarea id="live-event-message" maxlength="1000" rows="2" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">El directo oficial de MODEOS EL OBI ya ha comenzado.</textarea>
+                            <textarea id="live-event-message" maxlength="1000" rows="2" required class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">El directo oficial de MODEOS EL OBI ya ha comenzado.</textarea>
                         </label>
-                        <div class="flex items-center gap-3">
+                        <label class="block space-y-1 text-xs text-gray-300">
+                            <span>Canal destino opcional (ID)</span>
+                            <input id="live-event-channel" type="text" inputmode="numeric" maxlength="20" placeholder="Usar el canal automático configurado" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                        </label>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <label class="flex items-center gap-2 text-xs text-gray-300"><input id="live-event-active" type="checkbox" checked class="h-4 w-4 accent-[#00ffcc]">Anuncio activo</label>
+                            <button id="save-live-event-config" type="button" class="config-save-button px-4 py-2.5 border border-[#a855f7]/50 hover:bg-[#a855f7]/15 text-purple-200 rounded-xl text-xs">Guardar configuración</button>
                             <button id="live-event-submit" type="submit" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-tower-broadcast mr-1"></i>Avisar inicio</button>
                             <span id="live-event-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                        </div>
+                    </form>
+                </section>
+                <section class="space-y-4 border-t border-white/10 pt-5">
+                    <div>
+                        <h3 class="font-orbitron text-sm font-bold text-white">Nuevos vídeos</h3>
+                        <p class="text-xs text-gray-400 mt-1">Guarda la plantilla y el canal destino para futuros avisos de YouTube.</p>
+                    </div>
+                    <form id="video-announcement-form" class="content-config-form grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                        <label class="block space-y-1 text-xs text-gray-300">
+                            <span>Título de la notificación</span>
+                            <input id="video-announcement-title" type="text" maxlength="256" required class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                        </label>
+                        <label class="block space-y-1 text-xs text-gray-300">
+                            <span>Canal destino de Discord (ID)</span>
+                            <input id="video-announcement-channel" type="text" inputmode="numeric" maxlength="20" placeholder="ID opcional" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
+                        </label>
+                        <label class="block space-y-1 text-xs text-gray-300 md:col-span-2">
+                            <span>Texto del aviso</span>
+                            <textarea id="video-announcement-text" maxlength="1000" rows="3" required class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea>
+                        </label>
+                        <div class="flex flex-wrap items-center gap-3 md:col-span-2">
+                            <label class="flex items-center gap-2 text-xs text-gray-300"><input id="video-announcement-active" type="checkbox" class="h-4 w-4 accent-[#00ffcc]">Configuración activa</label>
+                            <button id="save-video-announcement-config" type="submit" class="config-save-button px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs">Guardar vídeos</button>
+                            <span id="video-announcement-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                         </div>
                     </form>
                 </section>
@@ -1236,6 +1267,8 @@
             document.getElementById('dev-image-slot').addEventListener('change', updateImageDeleteButton);
             document.getElementById('site-message-form').addEventListener('submit', publishSiteMessage);
             document.getElementById('live-event-form').addEventListener('submit', announceLiveEvent);
+            document.getElementById('save-live-event-config').addEventListener('click', saveLiveAnnouncementConfig);
+            document.getElementById('video-announcement-form').addEventListener('submit', saveVideoAnnouncementConfig);
             document.getElementById('platform-status').addEventListener('change', event => {
                 document.getElementById('maintenance-enabled').checked = event.target.value === 'mantenimiento';
             });
@@ -1964,16 +1997,15 @@
 
         async function announceLiveEvent(event) {
             event.preventDefault();
-            const titleInput = document.getElementById('live-event-title');
-            const messageInput = document.getElementById('live-event-message');
             const button = document.getElementById('live-event-submit');
             const status = document.getElementById('live-event-status');
             button.disabled = true;
+            button.classList.add('is-loading');
             status.textContent = 'Enviando aviso a Discord...';
             try {
                 await apiRequest('/api/dev/live-events', {
                     method: 'POST',
-                    body: JSON.stringify({ title: titleInput.value, message: messageInput.value })
+                    body: JSON.stringify({})
                 });
                 status.textContent = 'Aviso de directo publicado.';
                 showToast(status.textContent);
@@ -1982,6 +2014,96 @@
                 showToast(status.textContent, 'error');
             } finally {
                 button.disabled = false;
+                button.classList.remove('is-loading');
+            }
+        }
+
+        async function loadLiveAnnouncementConfig() {
+            const status = document.getElementById('live-event-status');
+            try {
+                const config = await apiRequest('/api/dev/live-announcement-config');
+                document.getElementById('live-event-title').value = config.title_template;
+                document.getElementById('live-event-message').value = config.message_template;
+                document.getElementById('live-event-channel').value = config.channel_id || '';
+                document.getElementById('live-event-active').checked = Boolean(config.is_active);
+            } catch (error) {
+                status.textContent = `No se pudo cargar la configuración: ${error.message}`;
+            }
+        }
+
+        async function saveLiveAnnouncementConfig() {
+            const form = document.getElementById('live-event-form');
+            const button = document.getElementById('save-live-event-config');
+            const status = document.getElementById('live-event-status');
+            button.disabled = true;
+            button.classList.add('is-loading');
+            form.classList.add('is-loading');
+            status.textContent = 'Guardando en Neon…';
+            try {
+                const config = await apiRequest('/api/dev/live-announcement-config', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        title_template: document.getElementById('live-event-title').value,
+                        message_template: document.getElementById('live-event-message').value,
+                        channel_id: document.getElementById('live-event-channel').value,
+                        is_active: document.getElementById('live-event-active').checked
+                    })
+                });
+                document.getElementById('live-event-channel').value = config.channel_id || '';
+                status.textContent = 'Configuración del directo guardada en Neon.';
+                showToast(status.textContent);
+            } catch (error) {
+                status.textContent = `No se pudo guardar: ${error.message}`;
+                showToast(status.textContent, 'error');
+            } finally {
+                button.disabled = false;
+                button.classList.remove('is-loading');
+                form.classList.remove('is-loading');
+            }
+        }
+
+        async function loadVideoAnnouncementConfig() {
+            const status = document.getElementById('video-announcement-status');
+            try {
+                const config = await apiRequest('/api/dev/video-announcement-config');
+                document.getElementById('video-announcement-title').value = config.title_template;
+                document.getElementById('video-announcement-channel').value = config.target_channel_id || '';
+                document.getElementById('video-announcement-text').value = config.notification_text;
+                document.getElementById('video-announcement-active').checked = Boolean(config.is_active);
+            } catch (error) {
+                status.textContent = `No se pudo cargar la configuración: ${error.message}`;
+            }
+        }
+
+        async function saveVideoAnnouncementConfig(event) {
+            event.preventDefault();
+            const form = document.getElementById('video-announcement-form');
+            const button = document.getElementById('save-video-announcement-config');
+            const status = document.getElementById('video-announcement-status');
+            button.disabled = true;
+            button.classList.add('is-loading');
+            form.classList.add('is-loading');
+            status.textContent = 'Guardando en Neon…';
+            try {
+                const config = await apiRequest('/api/dev/video-announcement-config', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        title_template: document.getElementById('video-announcement-title').value,
+                        target_channel_id: document.getElementById('video-announcement-channel').value,
+                        notification_text: document.getElementById('video-announcement-text').value,
+                        is_active: document.getElementById('video-announcement-active').checked
+                    })
+                });
+                document.getElementById('video-announcement-channel').value = config.target_channel_id || '';
+                status.textContent = 'Configuración de nuevos vídeos guardada en Neon.';
+                showToast(status.textContent);
+            } catch (error) {
+                status.textContent = `No se pudo guardar: ${error.message}`;
+                showToast(status.textContent, 'error');
+            } finally {
+                button.disabled = false;
+                button.classList.remove('is-loading');
+                form.classList.remove('is-loading');
             }
         }
 
@@ -2190,6 +2312,8 @@
             if (tabId === 'devzone') {
                 refreshDevStatus();
                 loadDevBots();
+                loadLiveAnnouncementConfig();
+                loadVideoAnnouncementConfig();
                 connectDevLogStream();
             }
             document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(button => {

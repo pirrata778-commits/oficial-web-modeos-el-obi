@@ -152,6 +152,29 @@ try {
     is_active BOOLEAN NOT NULL DEFAULT FALSE,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+  CREATE TABLE IF NOT EXISTS live_announcement_config (
+    config_id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (config_id = 1),
+    title_template TEXT NOT NULL DEFAULT 'Estamos en directo',
+    message_template TEXT NOT NULL DEFAULT 'El directo oficial de MODEOS EL OBI ya ha comenzado.',
+    channel_id TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  INSERT INTO live_announcement_config (config_id)
+  VALUES (1)
+  ON CONFLICT (config_id) DO NOTHING;
+  CREATE TABLE IF NOT EXISTS video_announcement_config (
+    config_id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (config_id = 1),
+    platform TEXT NOT NULL DEFAULT 'youtube' CHECK (platform = 'youtube'),
+    title_template TEXT NOT NULL DEFAULT '🎬 Nuevo vídeo: {title}',
+    target_channel_id TEXT NOT NULL DEFAULT '',
+    notification_text TEXT NOT NULL DEFAULT '{url}',
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  INSERT INTO video_announcement_config (config_id)
+  VALUES (1)
+  ON CONFLICT (config_id) DO NOTHING;
   CREATE TABLE IF NOT EXISTS discord_notification_routes (
     event_type TEXT PRIMARY KEY CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started')),
     bot_id BIGINT REFERENCES bots(id) ON DELETE SET NULL,
@@ -346,12 +369,19 @@ async function deliverQueuedNotification(notificationId) {
       [notification.type]
     );
     const route = routeRows[0];
+    let liveChannelId = null;
+    if (notification.type === 'live_started') {
+      const { rows: liveConfigRows } = await database.query(
+        'SELECT channel_id FROM live_announcement_config WHERE config_id = 1'
+      );
+      liveChannelId = liveConfigRows[0]?.channel_id || null;
+    }
     const readyInstances = route
       ? botInstances.filter(instance => instance.databaseId === route.bot_id && instance.client.isReady())
       : botInstances.filter(instance => instance.client.isReady());
     if (!readyInstances.length) throw new Error(route ? 'El bot configurado para esta notificacion no esta conectado.' : 'Ningun bot esta conectado.');
 
-    const channelId = route?.channel_id || configuredNotificationChannel(notification);
+    const channelId = liveChannelId || route?.channel_id || configuredNotificationChannel(notification);
     if (!channelId || !/^\d{17,20}$/.test(channelId)) {
       throw new Error(`Falta un ID valido para ${notificationChannelEnvironment(notification)}.`);
     }
@@ -1166,18 +1196,82 @@ app.delete('/api/dev/site-messages/:id', requireDev, asyncRoute(async (request, 
   response.json(state);
 }));
 
-app.post('/api/dev/live-events', requireDev, asyncRoute(async (request, response) => {
-  let notification;
-  try {
-    notification = createNotification({
-      type: 'live_started',
-      title: request.body?.title,
-      message: request.body?.message
-    });
-  } catch (error) {
-    if (error instanceof NotificationValidationError) return response.status(400).json({ error: error.message });
-    throw error;
+app.get('/api/dev/live-announcement-config', requireDev, asyncRoute(async (_request, response) => {
+  const { rows } = await database.query(`
+    SELECT title_template, message_template, channel_id, is_active, updated_at
+    FROM live_announcement_config WHERE config_id = 1
+  `);
+  response.json(rows[0]);
+}));
+
+app.put('/api/dev/live-announcement-config', requireDev, asyncRoute(async (request, response) => {
+  const title = typeof request.body?.title_template === 'string' ? request.body.title_template.trim() : '';
+  const message = typeof request.body?.message_template === 'string' ? request.body.message_template.trim() : '';
+  const channelId = typeof request.body?.channel_id === 'string' ? request.body.channel_id.trim() : '';
+  const isActive = request.body?.is_active;
+  if (!title || title.length > 256 || !message || message.length > 1000
+    || typeof isActive !== 'boolean' || (channelId && !/^\d{17,20}$/.test(channelId))) {
+    return response.status(400).json({ error: 'Revisa el título, mensaje, canal y estado del anuncio de directo.' });
   }
+  const { rows } = await database.query(`
+    INSERT INTO live_announcement_config (config_id, title_template, message_template, channel_id, is_active)
+    VALUES (1, $1, $2, NULLIF($3, ''), $4)
+    ON CONFLICT (config_id) DO UPDATE SET
+      title_template = EXCLUDED.title_template,
+      message_template = EXCLUDED.message_template,
+      channel_id = EXCLUDED.channel_id,
+      is_active = EXCLUDED.is_active,
+      updated_at = NOW()
+    RETURNING title_template, message_template, channel_id, is_active, updated_at
+  `, [title, message, channelId, isActive]);
+  await logSecurity('live_announcement_config_updated', request, { isActive, channelId: channelId || null });
+  response.json(rows[0]);
+}));
+
+app.get('/api/dev/video-announcement-config', requireDev, asyncRoute(async (_request, response) => {
+  const { rows } = await database.query(`
+    SELECT platform, title_template, target_channel_id, notification_text, is_active, updated_at
+    FROM video_announcement_config WHERE config_id = 1
+  `);
+  response.json(rows[0]);
+}));
+
+app.put('/api/dev/video-announcement-config', requireDev, asyncRoute(async (request, response) => {
+  const title = typeof request.body?.title_template === 'string' ? request.body.title_template.trim() : '';
+  const targetChannelId = typeof request.body?.target_channel_id === 'string' ? request.body.target_channel_id.trim() : '';
+  const notificationText = typeof request.body?.notification_text === 'string' ? request.body.notification_text.trim() : '';
+  const isActive = request.body?.is_active;
+  if (!title || title.length > 256 || !notificationText || notificationText.length > 1000
+    || typeof isActive !== 'boolean' || (targetChannelId && !/^\d{17,20}$/.test(targetChannelId))) {
+    return response.status(400).json({ error: 'Revisa el título, texto, canal destino y estado del aviso de vídeo.' });
+  }
+  const { rows } = await database.query(`
+    INSERT INTO video_announcement_config (config_id, platform, title_template, target_channel_id, notification_text, is_active)
+    VALUES (1, 'youtube', $1, $2, $3, $4)
+    ON CONFLICT (config_id) DO UPDATE SET
+      title_template = EXCLUDED.title_template,
+      target_channel_id = EXCLUDED.target_channel_id,
+      notification_text = EXCLUDED.notification_text,
+      is_active = EXCLUDED.is_active,
+      updated_at = NOW()
+    RETURNING platform, title_template, target_channel_id, notification_text, is_active, updated_at
+  `, [title, targetChannelId, notificationText, isActive]);
+  await logSecurity('video_announcement_config_updated', request, { isActive, targetChannelId: targetChannelId || null });
+  response.json(rows[0]);
+}));
+
+app.post('/api/dev/live-events', requireDev, asyncRoute(async (request, response) => {
+  const { rows } = await database.query(`
+    SELECT title_template, message_template, is_active
+    FROM live_announcement_config WHERE config_id = 1
+  `);
+  const config = rows[0];
+  if (!config?.is_active) return response.status(409).json({ error: 'El anuncio de directo está desactivado.' });
+  const notification = createNotification({
+    type: 'live_started',
+    title: config.title_template,
+    message: config.message_template
+  });
   const queued = await queueDiscordNotification(notification);
   await logSecurity('live_event_announced', request, { notificationId: queued.id });
   response.status(202).json({ ok: true, notification: queued });

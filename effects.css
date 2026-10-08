@@ -63,7 +63,8 @@ textarea:focus-visible {
 }
 
 .dev-command-row.is-loading,
-.social-link-form.is-loading {
+.social-link-form.is-loading,
+.content-config-form.is-loading {
     animation: pendingPulse 900ms ease-in-out infinite alternate;
 }
 
