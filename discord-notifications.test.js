@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   DISCORD_NOTIFICATION_LAYOUT,
+  DISCORD_EMBED_COLORS,
   MODEOS_WEB_URL,
   createBotPresence,
+  createBotEmbed,
   createNotification,
   createNotificationEmbed
 } from './discord-notifications.js';
@@ -16,6 +18,34 @@ test('la estructura Discord usa categoria y canales Unicode ordenados', () => {
   assert.match(DISCORD_NOTIFICATION_LAYOUT.channels.live_started.name, /🎥/u);
 });
 
+test('el embed corporativo incluye estado, campos, miniatura, footer y fecha', () => {
+  const embed = createBotEmbed({
+    status: 'success',
+    title: '✅ Operación completada',
+    description: 'El bot está conectado.',
+    fields: [
+      { name: 'Bot', value: 'MODEOS', inline: true },
+      { name: 'Servidor', value: 'Comunidad', inline: true }
+    ],
+    thumbnailUrl: 'https://cdn.discordapp.com/embed/avatars/0.png',
+    timestamp: '2026-01-01T00:00:00.000Z'
+  });
+
+  assert.equal(embed.color, DISCORD_EMBED_COLORS.success);
+  assert.equal(embed.fields[0].inline, true);
+  assert.equal(embed.fields[1].name, 'Servidor');
+  assert.equal(embed.thumbnail.url, 'https://cdn.discordapp.com/embed/avatars/0.png');
+  assert.equal(embed.footer.text, 'MODEOS EL OBI | Dev Panel');
+  assert.equal(embed.timestamp, '2026-01-01T00:00:00.000Z');
+});
+
+test('el estado desconocido usa el color informativo y omite miniaturas no HTTPS', () => {
+  const embed = createBotEmbed({ status: 'other', thumbnailUrl: 'http://example.com/logo.png' });
+
+  assert.equal(embed.color, DISCORD_EMBED_COLORS.info);
+  assert.equal('thumbnail' in embed, false);
+});
+
 test('anuncios de desarrollador incluyen la autoria oficial y la web', () => {
   const notification = createNotification({
     type: 'developer_announcement',
@@ -26,20 +56,26 @@ test('anuncios de desarrollador incluyen la autoria oficial y la web', () => {
   const embed = createNotificationEmbed(notification);
 
   assert.equal(embed.author.name, 'Desarrollador oficial de MODEOS EL OBI');
+  assert.equal(embed.color, DISCORD_EMBED_COLORS.info);
+  assert.match(embed.title, /^📣/u);
   assert.equal(embed.url, MODEOS_WEB_URL);
-  assert.match(embed.fields[0].value, new RegExp(MODEOS_WEB_URL.replaceAll('.', '\\.')));
+  assert.match(embed.fields.at(-1).value, new RegExp(MODEOS_WEB_URL.replaceAll('.', '\\.')));
 });
 
-test('alertas de mantenimiento conservan el enlace obligatorio', () => {
+test('alertas de mantenimiento usan rojo, estado inline y miniatura del bot', () => {
   const embed = createNotificationEmbed({
     type: 'platform_status',
     platformStatus: 'mantenimiento',
     message: 'Actualizamos la plataforma.'
-  });
+  }, 'https://cdn.discordapp.com/embed/avatars/1.png');
 
   assert.equal(embed.author.name, 'Estado oficial de MODEOS EL OBI');
+  assert.equal(embed.color, DISCORD_EMBED_COLORS.error);
+  assert.equal(embed.fields[0].name, 'Estado');
+  assert.equal(embed.fields[0].inline, true);
+  assert.equal(embed.thumbnail.url, 'https://cdn.discordapp.com/embed/avatars/1.png');
   assert.equal(embed.url, MODEOS_WEB_URL);
-  assert.equal(embed.fields[0].name, 'Web oficial');
+  assert.equal(embed.fields.at(-1).name, 'Web oficial');
 });
 
 test('avisos de directo conservan el enlace obligatorio', () => {
@@ -50,8 +86,10 @@ test('avisos de directo conservan el enlace obligatorio', () => {
   });
 
   assert.equal(embed.author.name, 'Directo oficial de MODEOS EL OBI');
+  assert.equal(embed.color, DISCORD_EMBED_COLORS.success);
+  assert.match(embed.title, /^🎥/u);
   assert.equal(embed.url, MODEOS_WEB_URL);
-  assert.match(embed.fields[0].value, new RegExp(MODEOS_WEB_URL.replaceAll('.', '\\.')));
+  assert.match(embed.fields.at(-1).value, new RegExp(MODEOS_WEB_URL.replaceAll('.', '\\.')));
 });
 
 test('la presencia coincide con activo, beta y mantenimiento', () => {

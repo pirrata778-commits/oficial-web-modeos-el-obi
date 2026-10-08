@@ -15,7 +15,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #030308;
             color: #e2e8f0;
-            overflow-x: hidden;
+            overflow-x: clip;
             margin: 0;
             padding: 0;
             -webkit-user-select: none;
@@ -24,6 +24,183 @@
             user-select: none;
         }
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0.9rem 2.5rem;
+            background: rgba(11, 11, 15, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+            animation: navSlideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes navSlideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .navbar-brand {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: 0.5px;
+        }
+        .navbar-brand .highlight {
+            background: linear-gradient(135deg, #d8b4fe, #a855f7, #7c3aed);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.6));
+            animation: pulseGlow 3s ease-in-out infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.4)); }
+            100% { filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.8)); }
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-links .nav-btn {
+            position: relative;
+            padding: 0.55rem 1.1rem;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .nav-links .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transition: left 0.5s;
+        }
+        .nav-links .nav-btn:hover::before { left: 100%; }
+        .nav-links .nav-btn:hover {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateY(-1px);
+        }
+        .nav-links .nav-btn[aria-current="page"] {
+            color: #fff;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(168, 85, 247, 0.1));
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.25), inset 0 0 10px rgba(168, 85, 247, 0.1);
+        }
+        .nav-action-btn {
+            background: linear-gradient(135deg, #9333ea, #6d28d9) !important;
+            color: #fff !important;
+            font-weight: 600 !important;
+            padding: 0.6rem 1.5rem !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 20px rgba(147, 51, 234, 0.4) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-action-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.7) !important;
+            background: linear-gradient(135deg, #a855f7, #9333ea) !important;
+        }
+        #toast-container {
+            position: fixed;
+            right: 2rem;
+            bottom: 2rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: min(380px, calc(100vw - 2rem));
+            pointer-events: none;
+        }
+        .toast {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            overflow: hidden;
+            padding: 1rem 1.25rem;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-left: 4px solid #a855f7;
+            border-radius: 12px;
+            background: rgba(18, 18, 26, 0.9);
+            color: #f8fafc;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(168, 85, 247, 0.15);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            pointer-events: auto;
+            animation: toastSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .toast.success {
+            border-color: rgba(34, 197, 94, 0.3);
+            border-left-color: #22c55e;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 197, 94, 0.15);
+        }
+        .toast.error {
+            border-color: rgba(239, 68, 68, 0.3);
+            border-left-color: #ef4444;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.15);
+        }
+        .toast-message { flex: 1; overflow-wrap: anywhere; }
+        .toast-close {
+            flex: 0 0 auto;
+            padding: 0.1rem 0.25rem;
+            border: 0;
+            background: transparent;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .toast-close:hover { color: #fff; }
+        @keyframes toastSlideIn {
+            from { transform: translateX(120%) scale(0.9); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
+        }
+        .toast.fade-out { animation: toastSlideOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards; }
+        @keyframes toastSlideOut {
+            from { transform: translateX(0) scale(1); opacity: 1; }
+            to { transform: translateX(120%) scale(0.9); opacity: 0; }
+        }
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #a855f7;
+            animation: toastCountdown var(--toast-duration, 5000ms) linear forwards;
+        }
+        .toast.success .toast-progress { background: #22c55e; }
+        .toast.error .toast-progress { background: #ef4444; }
+        @keyframes toastCountdown {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        .mobile-nav-btn[aria-current="page"] { color: #a855f7; }
         .glass-panel {
             background: rgba(10, 10, 22, 0.90);
             backdrop-filter: blur(25px);
@@ -48,9 +225,21 @@
         @media (max-width: 767px) {
             body { overflow-x: clip; }
             main { width: 100%; padding-left: 1rem; padding-right: 1rem; padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
-            body > nav:first-of-type { flex-wrap: wrap; gap: .65rem; }
+            .navbar { padding: 0.55rem 0.85rem; gap: 0.5rem; flex-wrap: nowrap; }
+            .navbar .nav-links { display: none; }
+            .navbar-brand { flex: 1 1 auto; min-width: 0; gap: 0.35rem; font-size: 1rem; }
+            .navbar-brand > div:first-child { width: 2rem; height: 2rem; flex: 0 0 2rem; }
+            .navbar-brand > div:last-child { min-width: 0; }
+            .navbar-brand > div:last-child > span:first-child { font-size: 0.7rem; letter-spacing: 0; white-space: nowrap; }
+            .navbar-brand > div:last-child > span:last-child { display: none; }
+            .navbar > div:last-child { flex: 0 0 auto; gap: 0.35rem; }
+            .navbar > div:last-child > button:first-child { padding: 0.45rem 0.55rem; }
+            .navbar .nav-action-btn { padding: 0.5rem 0.7rem !important; font-size: 0.7rem !important; }
+            #toast-container { right: 1rem; bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+            body > nav:first-of-type { flex-wrap: nowrap; gap: .5rem; }
             body > nav:first-of-type > :first-child { min-width: 0; flex: 1 1 auto; }
             body > nav:first-of-type > :last-child { flex: 0 0 auto; }
+            #stream-promo { aspect-ratio: auto; min-height: 0; overflow: visible; }
             .mobile-nav-btn { min-width: 3.25rem; min-height: 2.75rem; justify-content: center; }
             body > div.fixed.bottom-0 { padding-bottom: calc(.5rem + env(safe-area-inset-bottom)); }
             #tab-devzone > .glass-panel > :first-child,
@@ -77,9 +266,22 @@
         @media (max-width: 380px) {
             #subtab-btn-servers, #subtab-btn-invite { font-size: .625rem; }
             #subtab-btn-invite span:nth-child(2) { overflow-wrap: anywhere; }
-            body > nav:first-of-type > :first-child > div:last-child span:first-child { font-size: .65rem; }
+            .navbar-brand > div:last-child > span:first-child { font-size: .65rem; }
+        }
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .navbar { padding: 0.9rem 1rem; column-gap: 0.75rem; }
+            .nav-links { gap: 0.2rem; padding: 0.25rem; }
+            .nav-links .nav-btn { padding: 0.45rem 0.55rem; font-size: 0.8rem; }
+            .navbar > div:last-child { gap: 0.35rem; }
+            .navbar .nav-action-btn { padding: 0.5rem 0.8rem !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .navbar, .navbar-brand .highlight, .toast, .toast-progress { animation: none; }
+            .navbar-brand .highlight { filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.5)); }
+            .nav-links .nav-btn, .nav-action-btn { transition: none !important; }
         }
     </style>
+    <link rel="stylesheet" href="effects.css">
 </head>
 <body class="min-h-screen flex flex-col cyber-grid relative selection:bg-[#00ffcc] selection:text-black">
 
@@ -93,40 +295,40 @@
     </div>
 
     <!-- Navegación Superior -->
-    <nav class="w-full bg-[#05050b]/95 backdrop-blur-2xl border-b border-[#00ffcc]/20 px-3 sm:px-6 py-3 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-40">
-        <div class="flex items-center space-x-2 cursor-pointer group" onclick="switchTab('lobby')">
+    <nav class="navbar">
+        <div class="navbar-brand cursor-pointer group" onclick="switchTab('lobby')">
             <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#9d00ff] to-[#00ffcc] p-0.5 shadow-[0_0_20px_rgba(0,255,204,0.4)] flex items-center justify-center shrink-0">
                 <div class="w-full h-full bg-[#05050b] rounded-[10px] flex items-center justify-center">
                     <i class="fa-solid fa-cube text-[#00ffcc] text-xs sm:text-sm"></i>
                 </div>
             </div>
             <div>
-                <span class="font-orbitron font-black text-white text-xs sm:text-base tracking-wider block leading-tight">MODEOS <span class="text-[#00ffcc] glow-text">EL OBI</span></span>
+                <span class="font-orbitron font-black text-white text-xs sm:text-base tracking-wider block leading-tight">MODEOS <span class="highlight">EL OBI</span></span>
                 <span class="text-[8px] sm:text-[9px] text-purple-400 font-orbitron font-bold uppercase tracking-widest block leading-tight">PLATAFORMA DE BOTS</span>
             </div>
         </div>
 
         <!-- Pestañas Desktop -->
-        <div class="hidden md:flex items-center space-x-2 bg-[#0a0a16]/90 border border-white/10 rounded-full p-1.5 shadow-inner backdrop-blur-xl">
-            <button onclick="switchTab('lobby')" class="nav-btn px-4 py-2 rounded-full text-xs font-orbitron font-bold text-purple-300 bg-[#9d00ff]/15 border border-[#9d00ff]/40 transition-all flex items-center space-x-2" data-target="lobby">
+        <div class="nav-links hidden lg:flex bg-[#15151c]/90 border border-white/10 rounded-full p-1.5 shadow-inner backdrop-blur-xl">
+            <button onclick="switchTab('lobby')" class="nav-btn font-orbitron flex items-center space-x-2" data-target="lobby" aria-current="page">
                 <i class="fa-solid fa-network-wired text-sm"></i><span>Lobby</span>
             </button>
-            <button onclick="switchTab('modelos')" class="nav-btn px-4 py-2 rounded-full text-xs font-orbitron font-bold text-gray-400 hover:text-white transition-all flex items-center space-x-2 border border-transparent" data-target="modelos">
+            <button onclick="switchTab('modelos')" class="nav-btn font-orbitron flex items-center space-x-2" data-target="modelos">
                 <i class="fa-solid fa-code text-sm"></i><span>Modelos</span>
             </button>
-            <button onclick="switchTab('directos')" class="nav-btn px-4 py-2 rounded-full text-xs font-orbitron font-bold text-gray-400 hover:text-white transition-all flex items-center space-x-2 border border-transparent" data-target="directos">
+            <button onclick="switchTab('directos')" class="nav-btn font-orbitron flex items-center space-x-2" data-target="directos">
                 <i class="fa-solid fa-tower-broadcast text-sm"></i><span>Directos</span>
             </button>
-            <button onclick="switchTab('dashboard')" class="nav-btn px-4 py-2 rounded-full text-xs font-orbitron font-bold text-gray-400 hover:text-white transition-all flex items-center space-x-2 border border-transparent" data-target="dashboard">
+            <button onclick="switchTab('dashboard')" class="nav-btn font-orbitron flex items-center space-x-2" data-target="dashboard">
                 <i class="fa-solid fa-robot text-sm"></i><span>Dashboard Bot</span>
             </button>
         </div>
 
         <div class="flex items-center space-x-2">
-            <button onclick="openDevModal()" class="px-2.5 sm:px-3 py-2 bg-[#9d00ff]/20 hover:bg-[#9d00ff]/35 border border-[#9d00ff]/50 text-[#00ffcc] text-xs font-bold rounded-xl transition flex items-center space-x-1">
+            <button onclick="openDevModal()" class="px-2.5 sm:px-3 py-2 bg-[#a855f7]/15 hover:bg-[#a855f7]/25 border border-[#a855f7]/45 text-purple-300 text-xs font-bold rounded-xl transition flex items-center space-x-1">
                 <i class="fa-solid fa-shield-halved text-xs"></i><span class="font-orbitron text-[10px] sm:text-xs">DEV</span>
             </button>
-            <button onclick="loginDiscord()" id="discord-login-btn" class="px-2.5 sm:px-3 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl transition flex items-center space-x-1">
+            <button onclick="loginDiscord()" id="discord-login-btn" class="nav-action-btn px-2.5 sm:px-3 py-2 text-xs rounded-xl transition flex items-center space-x-1">
                 <i class="fa-brands fa-discord text-xs"></i><span class="font-orbitron text-[10px] sm:text-xs">Login</span>
             </button>
         </div>
@@ -152,8 +354,8 @@
     </section>
 
     <!-- Navegación Móvil Inferior -->
-    <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#05050b]/98 backdrop-blur-2xl border-t border-[#00ffcc]/20 px-1 py-2 flex justify-around items-center">
-        <button onclick="switchTab('lobby')" class="mobile-nav-btn flex flex-col items-center text-[#00ffcc] p-1" data-target="lobby">
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#05050b]/98 backdrop-blur-2xl border-t border-[#00ffcc]/20 px-1 py-2 flex justify-around items-center">
+        <button onclick="switchTab('lobby')" class="mobile-nav-btn flex flex-col items-center text-[#a855f7] p-1" data-target="lobby" aria-current="page">
             <i class="fa-solid fa-network-wired text-sm mb-0.5"></i>
             <span class="text-[8px] font-bold font-orbitron">Lobby</span>
         </button>
@@ -306,17 +508,17 @@
                     <figcaption data-image-placeholder class="absolute inset-0 flex items-center justify-center text-gray-500 text-xs font-orbitron">Imagen de directos</figcaption>
                 </figure>
 
-                <div class="relative w-full aspect-video bg-black/80 rounded-2xl border border-white/10 overflow-hidden flex flex-col items-center justify-center p-6 text-center space-y-3">
+                <div id="stream-promo" class="relative w-full aspect-video bg-black/80 rounded-2xl border border-white/10 overflow-hidden flex flex-col items-center justify-center p-6 text-center space-y-3">
                     <div class="w-16 h-16 rounded-2xl bg-[#ff007f]/20 border border-[#ff007f]/40 flex items-center justify-center text-[#ff007f] text-2xl shadow-[0_0_20px_rgba(255,0,127,0.3)]">
                         <i class="fa-solid fa-play"></i>
                     </div>
                     <h3 class="font-orbitron font-bold text-white text-base sm:text-lg">Próximas Emisiones en Directo</h3>
                     <p class="text-gray-400 text-xs sm:text-sm max-w-md">Sigue los directos de desarrollo y programación en canales oficiales.</p>
                     <div class="flex flex-wrap justify-center gap-3 pt-2">
-                        <a href="https://twitch.tv" target="_blank" class="px-5 py-2.5 bg-[#9146FF] hover:bg-[#772ce8] text-white font-orbitron text-xs font-bold rounded-xl transition flex items-center space-x-2">
+                        <a data-stream-link="twitch" href="https://twitch.tv" target="_blank" rel="noopener noreferrer" hidden class="px-5 py-2.5 bg-[#9146FF] hover:bg-[#772ce8] text-white font-orbitron text-xs font-bold rounded-xl transition flex items-center space-x-2">
                             <i class="fa-brands fa-twitch text-sm"></i><span>Twitch</span>
                         </a>
-                        <a href="https://youtube.com" target="_blank" class="px-5 py-2.5 bg-[#FF0000] hover:bg-[#cc0000] text-white font-orbitron text-xs font-bold rounded-xl transition flex items-center space-x-2">
+                        <a data-stream-link="youtube" href="https://youtube.com" target="_blank" rel="noopener noreferrer" hidden class="px-5 py-2.5 bg-[#FF0000] hover:bg-[#cc0000] text-white font-orbitron text-xs font-bold rounded-xl transition flex items-center space-x-2">
                             <i class="fa-brands fa-youtube text-sm"></i><span>YouTube</span>
                         </a>
                     </div>
@@ -781,7 +983,7 @@
                         <p class="text-xs text-gray-400 mt-1">Configura los enlaces globales oficiales de Twitch y YouTube.</p>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <form id="dev-twitch-link-form" data-platform="twitch" class="space-y-3 border border-white/10 rounded-lg p-3">
+                        <form id="dev-twitch-link-form" data-platform="twitch" class="social-link-form space-y-3 border border-white/10 rounded-lg p-3">
                             <label class="block space-y-1 text-xs text-gray-300">
                                 <span>Canal de Twitch</span>
                                 <input id="dev-twitch-url" type="url" maxlength="500" placeholder="https://twitch.tv/tu-canal" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
@@ -792,7 +994,7 @@
                                 <span id="dev-twitch-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                             </div>
                         </form>
-                        <form id="dev-youtube-link-form" data-platform="youtube" class="space-y-3 border border-white/10 rounded-lg p-3">
+                        <form id="dev-youtube-link-form" data-platform="youtube" class="social-link-form space-y-3 border border-white/10 rounded-lg p-3">
                             <label class="block space-y-1 text-xs text-gray-300">
                                 <span>Canal de YouTube</span>
                                 <input id="dev-youtube-url" type="url" maxlength="500" placeholder="https://youtube.com/@tu-canal" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">
@@ -918,6 +1120,8 @@
         </nav>
     </footer>
 
+    <div id="toast-container" role="region" aria-label="Notificaciones" aria-live="polite" aria-relevant="additions"></div>
+
     <section id="cookie-banner" class="cookie-banner" role="region" aria-label="Preferencias de cookies" hidden>
         <div class="cookie-banner-copy">
             <span class="cookie-eyebrow"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> PRIVACIDAD</span>
@@ -1040,7 +1244,7 @@
                 if (event.target.checked) select.value = 'mantenimiento';
                 if (!event.target.checked && select.value === 'mantenimiento') select.value = 'activo';
             });
-            await Promise.all([loadSession(), loadSiteImages(), loadSiteState(), loadApiHealth(), loadBotConfig(), loadBots()]);
+            await Promise.all([loadSession(), loadSiteImages(), loadSiteState(), loadStreamingLinks(), loadApiHealth(), loadBotConfig(), loadBots()]);
             renderSiteState();
             connectSiteUpdates();
             updateDashboardAccessUI();
@@ -1059,6 +1263,49 @@
             spinner.setAttribute('aria-hidden', 'true');
             status.append(spinner, document.createTextNode(message));
             container.replaceChildren(status);
+        }
+
+        function showToast(message, type = 'success', duration = 5000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const isError = type === 'error';
+            toast.className = `toast ${isError ? 'error' : 'success'}`;
+            toast.setAttribute('role', isError ? 'alert' : 'status');
+
+            const text = document.createElement('span');
+            text.className = 'toast-message';
+            text.textContent = message;
+
+            const close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'toast-close';
+            close.setAttribute('aria-label', 'Cerrar notificación');
+            close.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+
+            const progress = document.createElement('span');
+            progress.className = 'toast-progress';
+            progress.setAttribute('aria-hidden', 'true');
+            const lifetime = Math.max(1500, Math.min(Number(duration) || 5000, 10000));
+            progress.style.setProperty('--toast-duration', `${lifetime}ms`);
+
+            let dismissed = false;
+            const dismiss = () => {
+                if (dismissed) return;
+                dismissed = true;
+                clearTimeout(toast.dismissTimer);
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
+            };
+            close.addEventListener('click', dismiss);
+            toast.append(text, close, progress);
+            container.append(toast);
+            toast.dismissTimer = setTimeout(dismiss, lifetime);
+
+            while (container.children.length > 4) {
+                const oldest = container.firstElementChild;
+                clearTimeout(oldest.dismissTimer);
+                oldest.remove();
+            }
         }
 
         function redirectToLogin() {
@@ -1324,7 +1571,7 @@
                 const commands = await apiRequest(`/api/dev/bots/${encodeURIComponent(bot.id)}/commands`);
                 commands.forEach(command => {
                     const row = document.createElement('label');
-                    row.className = 'flex items-center justify-between gap-3 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-300';
+                    row.className = 'dev-command-row flex items-center justify-between gap-3 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-300';
                     const description = document.createElement('span');
                     description.textContent = `${command.name === 'setup' ? '/setup' : `!${command.name}`} · ${command.description}`;
                     const toggle = document.createElement('input');
@@ -1335,6 +1582,8 @@
                     toggle.setAttribute('aria-label', `Activar ${command.name}`);
                     toggle.addEventListener('change', async () => {
                         toggle.disabled = true;
+                        toggle.setAttribute('aria-busy', 'true');
+                        row.classList.add('is-loading');
                         try {
                             const updated = await apiRequest(`/api/dev/bots/${encodeURIComponent(bot.id)}/commands/${encodeURIComponent(command.name)}`, {
                                 method: 'PUT',
@@ -1342,10 +1591,14 @@
                             });
                             command.is_enabled = updated.enabled;
                             if (command.name === 'setup') bot.setup_command_enabled = updated.enabled;
+                            showToast(`${command.name} ${updated.enabled ? 'activado' : 'desactivado'}.`);
                         } catch (error) {
                             toggle.checked = Boolean(command.is_enabled);
                             document.getElementById('dev-bots-feedback').textContent = error.message;
+                            showToast(error.message, 'error');
                         } finally {
+                            toggle.removeAttribute('aria-busy');
+                            row.classList.remove('is-loading');
                             toggle.disabled = command.name === 'setup' && !bot.connected;
                         }
                     });
@@ -1373,6 +1626,25 @@
             }
         }
 
+        async function loadStreamingLinks() {
+            const publicLinks = document.querySelectorAll('[data-stream-link]');
+            try {
+                const links = await apiRequest('/api/social-links');
+                const linksByPlatform = new Map(links.map(link => [link.platform, link]));
+                publicLinks.forEach(element => {
+                    const link = linksByPlatform.get(element.dataset.streamLink);
+                    if (!link) {
+                        element.hidden = true;
+                        return;
+                    }
+                    element.href = link.url;
+                    element.hidden = false;
+                });
+            } catch {
+                publicLinks.forEach(element => { element.hidden = true; });
+            }
+        }
+
         async function loadDevSocialLinks() {
             try {
                 const links = await apiRequest('/api/dev/social-links');
@@ -1393,8 +1665,11 @@
 
         async function saveDevSocialLink(platform) {
             const status = document.getElementById(`dev-${platform}-status`);
-            const button = document.querySelector(`#dev-${platform}-link-form button[type="submit"]`);
+            const form = document.getElementById(`dev-${platform}-link-form`);
+            const button = form.querySelector('button[type="submit"]');
             button.disabled = true;
+            button.classList.add('is-loading');
+            form.classList.add('is-loading');
             status.textContent = 'Guardando…';
             try {
                 const link = await apiRequest(`/api/dev/social-links/${platform}`, {
@@ -1405,10 +1680,15 @@
                     })
                 });
                 status.textContent = `${link.platform === 'twitch' ? 'Twitch' : 'YouTube'} ${link.is_active ? 'guardado y activo' : 'guardado e inactivo'}.`;
+                await loadStreamingLinks();
+                showToast(status.textContent);
             } catch (error) {
                 status.textContent = error.message;
+                showToast(error.message, 'error');
             } finally {
                 button.disabled = false;
+                button.classList.remove('is-loading');
+                form.classList.remove('is-loading');
             }
         }
 
@@ -1642,8 +1922,10 @@
                 renderSiteState();
                 await loadBots();
                 status.textContent = 'Estado global actualizado.';
+                showToast(status.textContent);
             } catch (error) {
                 status.textContent = `No se pudo guardar: ${error.message}`;
+                showToast(status.textContent, 'error');
             } finally {
                 button.disabled = false;
             }
@@ -1657,6 +1939,7 @@
             const content = input.value.trim();
             if (!content) {
                 status.textContent = 'Escribe el contenido del aviso.';
+                showToast(status.textContent, 'error');
                 return;
             }
             button.disabled = true;
@@ -1670,8 +1953,10 @@
                 input.value = '';
                 renderSiteState();
                 status.textContent = 'Aviso publicado y enviado a Discord.';
+                showToast(status.textContent);
             } catch (error) {
                 status.textContent = `No se pudo publicar: ${error.message}`;
+                showToast(status.textContent, 'error');
             } finally {
                 button.disabled = false;
             }
@@ -1691,8 +1976,10 @@
                     body: JSON.stringify({ title: titleInput.value, message: messageInput.value })
                 });
                 status.textContent = 'Aviso de directo publicado.';
+                showToast(status.textContent);
             } catch (error) {
                 status.textContent = `No se pudo publicar: ${error.message}`;
+                showToast(status.textContent, 'error');
             } finally {
                 button.disabled = false;
             }
@@ -1768,10 +2055,17 @@
             const file = fileInput.files[0];
             if (!file) {
                 status.textContent = 'Selecciona una imagen.';
+                showToast(status.textContent, 'error');
                 return;
             }
-            if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
-                status.textContent = 'Formato no admitido o archivo mayor de 2 MB.';
+            if (file.size > 2 * 1024 * 1024) {
+                status.textContent = 'La imagen supera el límite máximo de 2 MB.';
+                showToast(status.textContent, 'error');
+                return;
+            }
+            if (file.size === 0 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+                status.textContent = 'Formato no admitido. Usa una imagen PNG, JPEG o WebP.';
+                showToast(status.textContent, 'error');
                 return;
             }
             submit.disabled = true;
@@ -1786,8 +2080,10 @@
                 await loadSiteImages();
                 fileInput.value = '';
                 status.textContent = 'Imagen publicada.';
+                showToast(status.textContent);
             } catch (error) {
                 status.textContent = `No se pudo publicar: ${error.message}`;
+                showToast(status.textContent, 'error');
             } finally {
                 submit.disabled = false;
             }
@@ -1802,8 +2098,10 @@
                 renderSiteImages();
                 renderDevImageList();
                 status.textContent = 'Imagen retirada.';
+                showToast(status.textContent);
             } catch (error) {
                 status.textContent = `No se pudo retirar: ${error.message}`;
+                showToast(status.textContent, 'error');
             }
         }
 
@@ -1840,7 +2138,7 @@
             username.textContent = 'Salir';
             discordBtn.setAttribute('aria-label', 'Cerrar sesión de Discord (' + userData.username + ')');
             discordBtn.append(username);
-            discordBtn.className = 'px-2.5 sm:px-3 py-2 bg-green-600 text-white text-xs font-bold rounded-xl transition flex items-center space-x-1';
+            discordBtn.className = 'nav-action-btn px-2.5 sm:px-3 py-2 text-xs rounded-xl transition flex items-center space-x-1';
             discordBtn.onclick = logoutDiscord;
             discordBtn.title = 'Cerrar sesión de Discord';
         }
@@ -1896,8 +2194,8 @@
             }
             document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(button => {
                 const active = button.dataset.target === tabId;
-                button.classList.toggle('text-[#00ffcc]', active);
-                button.classList.toggle('text-gray-400', !active);
+                if (active) button.setAttribute('aria-current', 'page');
+                else button.removeAttribute('aria-current');
             });
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -2496,7 +2794,7 @@
                 renderSiteState();
                 switchTab('devzone');
             } catch (error) {
-                alert(error.message);
+                showToast(error.message, 'error');
                 input.select();
             } finally {
                 submitButton.disabled = false;
@@ -2528,6 +2826,7 @@
             const message = document.getElementById('dev-command-message').value.trim();
             if (!botId || !guildId || !command) {
                 output.textContent = 'Selecciona un bot, un servidor y una acción habilitada.';
+                showToast(output.textContent, 'error');
                 return;
             }
             submit.disabled = true;
@@ -2538,8 +2837,10 @@
                     body: JSON.stringify({ guildId, channelId, message })
                 });
                 output.textContent = `> ${command}\n${result.output}`;
+                showToast(result.output);
             } catch (error) {
                 output.textContent = `> ${command}\nError: ${error.message}`;
+                showToast(error.message, 'error');
             } finally {
                 submit.disabled = false;
             }

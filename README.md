@@ -69,7 +69,7 @@ Los avisos se guardan primero en una cola PostgreSQL. Si el canal principal no e
 - Bloqueo de contraseña DEV tras cinco intentos fallidos.
 
 No pongas tokens ni secretos dentro de `index.html`. Usa únicamente `.env`.
-Las imágenes admitidas son PNG, JPEG y WebP, con un máximo de 2 MB cada una.
+Las imágenes admitidas son PNG, JPEG y WebP, con un máximo de 2 MB cada una. El backend valida el Base64 y la firma binaria del formato, y almacena los bytes en la columna `BYTEA` de `site_images` en Neon; no utiliza el disco efímero de Render. Los errores de formato devuelven HTTP 400 con `IMAGE_FORMAT_INVALID` o `IMAGE_FORMAT_UNSUPPORTED`; los archivos demasiado grandes devuelven HTTP 413 con `IMAGE_TOO_LARGE`, siempre acompañados de un mensaje legible en `error`.
 Los proveedores opcionales deben registrarse como scripts inertes, por ejemplo `<script type="text/plain" data-consent-category="analytics" data-consent-src="https://proveedor.example/analytics.js"></script>`; `cookies.js` solo los descarga tras consentimiento para su categoría. El Tailwind CDN actual se usa para renderizar la interfaz antes de la elección; la política de cookies lo declara y recomienda alojar localmente Tailwind, fuentes e iconos antes de exigir que no haya solicitudes de terceros previas al consentimiento.
 Las páginas legales contienen campos entre corchetes que debe completar y revisar el titular antes de publicarlas. Son plantillas informativas, no asesoramiento ni certificación de cumplimiento.
 

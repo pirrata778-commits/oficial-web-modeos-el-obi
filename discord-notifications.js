@@ -12,6 +12,12 @@ const WATCHING_ACTIVITY_TYPE = 3;
 
 const MAX_TITLE_LENGTH = 256;
 const MAX_MESSAGE_LENGTH = 4000;
+export const DISCORD_EMBED_COLORS = Object.freeze({
+  success: 0x22c55e,
+  error: 0xef4444,
+  info: 0x9333ea
+});
+const EMBED_FOOTER = 'MODEOS EL OBI | Dev Panel';
 
 const platformMeta = {
   activo: {
@@ -135,27 +141,69 @@ export function createBotPresence(platformStatus) {
   };
 }
 
-export function createNotificationEmbed(notification) {
+export function createBotEmbed({
+  status = 'info',
+  title = 'ℹ️ MODEOS EL OBI',
+  description = '',
+  fields = [],
+  thumbnailUrl,
+  timestamp = new Date().toISOString(),
+  author = 'MODEOS EL OBI',
+  url = MODEOS_WEB_URL
+} = {}) {
+  const selectedColor = DISCORD_EMBED_COLORS[status] || DISCORD_EMBED_COLORS.info;
+  const embed = {
+    color: selectedColor,
+    author: { name: String(author).slice(0, 256) },
+    title: String(title).slice(0, 256),
+    url,
+    fields: fields.slice(0, 24).flatMap(field => {
+      const name = String(field?.name || '').trim().slice(0, 256);
+      const value = String(field?.value || '').trim().slice(0, 1024);
+      return name && value ? [{ name, value, inline: Boolean(field.inline) }] : [];
+    }),
+    footer: { text: EMBED_FOOTER },
+    timestamp: new Date(timestamp).toISOString()
+  };
+  if (description) embed.description = String(description).slice(0, 4096);
+  if (thumbnailUrl) {
+    try {
+      const thumbnail = new URL(thumbnailUrl);
+      if (thumbnail.protocol === 'https:') embed.thumbnail = { url: thumbnail.toString() };
+    } catch {}
+  }
+  embed.fields.push({ name: 'Web oficial', value: `[Abrir MODEOS EL OBI](${MODEOS_WEB_URL})`, inline: true });
+  return embed;
+}
+
+export function createNotificationEmbed(notification, thumbnailUrl) {
   const normalized = createNotification(notification);
-  let color = 0x5865f2;
+  let status = 'info';
+  let icon = '📣';
   let author = 'Desarrollador oficial de MODEOS EL OBI';
+  let fields = [{ name: 'Tipo', value: 'Comunicado oficial', inline: true }];
 
   if (normalized.type === 'platform_status') {
-    color = platformMeta[normalized.platformStatus].color;
+    status = normalized.platformStatus === 'activo'
+      ? 'success'
+      : normalized.platformStatus === 'mantenimiento' ? 'error' : 'info';
+    icon = normalized.platformStatus === 'mantenimiento' ? '🚨' : '🟣';
     author = 'Estado oficial de MODEOS EL OBI';
+    fields = [{ name: 'Estado', value: normalized.platformStatus.toUpperCase(), inline: true }];
   } else if (normalized.type === 'live_started') {
-    color = 0x9146ff;
+    status = 'success';
+    icon = '🎥';
     author = 'Directo oficial de MODEOS EL OBI';
+    fields = [{ name: 'Estado', value: 'EN DIRECTO', inline: true }];
   }
 
-  return {
-    color,
-    author: { name: author },
-    title: normalized.title,
+  return createBotEmbed({
+    status,
+    author,
+    title: `${icon} ${normalized.title}`.slice(0, MAX_TITLE_LENGTH),
     description: normalized.message,
-    url: MODEOS_WEB_URL,
-    fields: [{ name: 'Web oficial', value: `[Abrir MODEOS EL OBI](${MODEOS_WEB_URL})`, inline: false }],
-    footer: { text: 'MODEOS EL OBI | Notificacion oficial' },
+    fields,
+    thumbnailUrl,
     timestamp: normalized.occurredAt
-  };
+  });
 }
