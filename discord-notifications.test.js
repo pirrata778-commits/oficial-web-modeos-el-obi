@@ -7,7 +7,8 @@ import {
   createBotPresence,
   createBotEmbed,
   createNotification,
-  createNotificationEmbed
+  createNotificationEmbed,
+  createNotificationMessage
 } from './discord-notifications.js';
 
 test('la estructura Discord usa categoria y canales Unicode ordenados', () => {
@@ -44,6 +45,22 @@ test('el estado desconocido usa el color informativo y omite miniaturas no HTTPS
 
   assert.equal(embed.color, DISCORD_EMBED_COLORS.info);
   assert.equal('thumbnail' in embed, false);
+});
+
+test('los avisos incluyen enlace web y boton interactivo de estado', () => {
+  const message = createNotificationMessage({
+    type: 'platform_status',
+    platformStatus: 'beta',
+    message: 'La web está en beta.'
+  });
+
+  assert.equal(message.embeds.length, 1);
+  assert.equal(message.components.length, 1);
+  assert.equal(message.components[0].type, 1);
+  assert.equal(message.components[0].components[0].style, 5);
+  assert.equal(message.components[0].components[0].url, MODEOS_WEB_URL);
+  assert.equal(message.components[0].components[1].style, 2);
+  assert.equal(message.components[0].components[1].custom_id, 'check_status');
 });
 
 test('anuncios de desarrollador incluyen la autoria oficial y la web', () => {

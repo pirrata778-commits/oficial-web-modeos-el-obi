@@ -207,3 +207,28 @@ export function createNotificationEmbed(notification, thumbnailUrl) {
     timestamp: normalized.occurredAt
   });
 }
+
+export function createNotificationMessage(notification, thumbnailUrl) {
+  return {
+    embeds: [createNotificationEmbed(notification, thumbnailUrl)],
+    components: [{
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 5,
+          label: 'Abrir MODEOS EL OBI',
+          url: MODEOS_WEB_URL,
+          emoji: { name: '🌐' }
+        },
+        {
+          type: 2,
+          style: 2,
+          custom_id: 'check_status',
+          label: 'Verificar estado',
+          emoji: { name: '⚡' }
+        }
+      ]
+    }]
+  };
+}

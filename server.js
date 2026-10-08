@@ -16,6 +16,7 @@ import {
   createBotEmbed,
   createNotification,
   createNotificationEmbed,
+  createNotificationMessage,
   notificationChannelEnvironment,
   normalizePlatformStatus
 } from './discord-notifications.js';
@@ -397,9 +398,10 @@ async function deliverQueuedNotification(notificationId) {
       try {
         const channel = instance.client.channels.cache.get(channelId) || await instance.client.channels.fetch(channelId);
         if (!channel?.isTextBased()) throw new Error('El canal configurado no admite mensajes de texto.');
-        await channel.send({
-          embeds: [createNotificationEmbed(notification, instance.client.user.displayAvatarURL())]
-        });
+        await channel.send(createNotificationMessage(
+          notification,
+          instance.client.user.displayAvatarURL()
+        ));
         deliveredBy = instance.name;
         break;
       } catch (error) {
@@ -1528,6 +1530,37 @@ function startBotInstance(configuredBot, databaseId = null) {
     });
   });
   client.on(Events.InteractionCreate, async interaction => {
+    if (interaction.isButton()) {
+      if (interaction.customId !== 'check_status') return;
+      await interaction.deferReply({ ephemeral: true });
+      try {
+        const state = await readSiteState();
+        const message = state.platformStatus === 'mantenimiento'
+          ? state.maintenanceMessage
+          : state.platformStatus === 'beta'
+            ? 'La plataforma está disponible en fase beta.'
+            : 'MODEOS EL OBI está operativo.';
+        await interaction.editReply({
+          embeds: [createNotificationEmbed({
+            type: 'platform_status',
+            platformStatus: state.platformStatus,
+            title: 'Estado oficial de MODEOS EL OBI',
+            message
+          }, client.user.displayAvatarURL())]
+        });
+      } catch (error) {
+        console.error(`[BOT] No se pudo verificar el estado desde Discord:`, error);
+        await interaction.editReply({
+          embeds: [createBotEmbed({
+            status: 'error',
+            title: '❌ No se pudo verificar el estado',
+            description: 'Inténtalo de nuevo más tarde.',
+            thumbnailUrl: client.user.displayAvatarURL()
+          })]
+        });
+      }
+      return;
+    }
     if (!interaction.isChatInputCommand() || interaction.commandName !== 'setup') return;
     if (!instance.setupCommandEnabled) {
       await interaction.reply({
