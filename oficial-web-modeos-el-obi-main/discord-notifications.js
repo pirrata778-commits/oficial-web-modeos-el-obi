@@ -62,6 +62,20 @@ function optionalText(value, field, maxLength, fallback) {
   return requiredText(value, field, maxLength);
 }
 
+function optionalHttpsUrl(value, field) {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value !== 'string' || value.length > 2048) {
+    throw new NotificationValidationError(`${field} no es una URL válida.`);
+  }
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') throw new Error('HTTPS requerido');
+    return url.toString();
+  } catch {
+    throw new NotificationValidationError(`${field} debe ser una URL HTTPS válida.`);
+  }
+}
+
 function normalizedTimestamp(value) {
   if (!value) return new Date().toISOString();
   const timestamp = new Date(value);
@@ -121,6 +135,7 @@ export function createNotification(input) {
       type,
       title: optionalText(input.title, 'title', MAX_TITLE_LENGTH, 'Comunicado de luto'),
       message: requiredText(input.message ?? input.content, 'message', MAX_MESSAGE_LENGTH),
+      imageUrl: optionalHttpsUrl(input.imageUrl, 'imageUrl'),
       occurredAt
     };
   }
@@ -158,6 +173,7 @@ export function createBotEmbed({
   description = '',
   fields = [],
   thumbnailUrl,
+  imageUrl,
   timestamp = new Date().toISOString(),
   author = 'MODEOS EL OBI',
   url = MODEOS_WEB_URL
@@ -181,6 +197,12 @@ export function createBotEmbed({
     try {
       const thumbnail = new URL(thumbnailUrl);
       if (thumbnail.protocol === 'https:') embed.thumbnail = { url: thumbnail.toString() };
+    } catch {}
+  }
+  if (imageUrl) {
+    try {
+      const image = new URL(imageUrl);
+      if (image.protocol === 'https:') embed.image = { url: image.toString() };
     } catch {}
   }
   embed.fields.push({ name: 'Web oficial', value: `[Abrir MODEOS EL OBI](${MODEOS_WEB_URL})`, inline: true });
@@ -220,6 +242,7 @@ export function createNotificationEmbed(notification, thumbnailUrl) {
     description: normalized.message,
     fields,
     thumbnailUrl,
+    imageUrl: normalized.type === 'mourning_announcement' ? normalized.imageUrl : undefined,
     timestamp: normalized.occurredAt
   });
 }

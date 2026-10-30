@@ -647,7 +647,7 @@
                         <div id="public-bots-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" aria-live="polite"></div>
                     </section>
                     <!-- Tarjetas de Estadísticas Rápidas -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div class="glass-panel p-4 rounded-2xl border-white/10 flex items-center space-x-3.5">
                             <div class="w-11 h-11 rounded-xl bg-[#5865F2]/20 border border-[#5865F2]/40 flex items-center justify-center text-[#8f9bff] text-lg">
                                 <i class="fa-solid fa-server"></i>
@@ -964,7 +964,7 @@
                         <button id="dev-notification-setup" type="button" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-brands fa-discord mr-1"></i>Conectar bot oficial y configurar canales</button>
                         <span id="dev-notification-feedback" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <label class="space-y-1 text-xs text-gray-300"><span>Canal de comunicados</span><select id="dev-channel-announcements" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
                         <label class="space-y-1 text-xs text-gray-300"><span>Canal de estado web</span><select id="dev-channel-status" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
                         <label class="space-y-1 text-xs text-gray-300"><span>Canal de directos</span><select id="dev-channel-live" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
@@ -995,7 +995,7 @@
                         <p class="text-xs text-gray-400 mt-1">Selecciona uno o varios bots para atribuir el comunicado. Se mostrará en el Lobby junto a los avisos oficiales.</p>
                     </div>
                     <form id="bot-announcement-form" class="space-y-3">
-                        <label class="block space-y-1 text-xs text-gray-300"><span>Bots que publican el comunicado</span><select id="bot-announcement-sources" multiple size="4" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" aria-describedby="bot-announcement-hint"></select><span id="bot-announcement-hint" class="block text-gray-500">Puedes seleccionar varios con Ctrl o Cmd.</span></label>
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Bots que publican el comunicado</span><select id="bot-announcement-sources" multiple size="4" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" aria-describedby="bot-announcement-hint"></select><span id="bot-announcement-hint" class="block text-gray-500">En móvil toca para seleccionar; en ordenador usa Ctrl o Cmd para elegir varios.</span></label>
                         <label class="block space-y-1 text-xs text-gray-300"><span>Comunicado</span><textarea id="bot-announcement-content" maxlength="1000" rows="3" placeholder="Escribe el comunicado de los bots seleccionados…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea></label>
                         <div class="flex items-center gap-3"><button id="bot-announcement-submit" type="submit" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-paper-plane mr-1"></i>Publicar comunicado</button><span id="bot-announcement-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span></div>
                     </form>
@@ -1050,6 +1050,7 @@
                     <div>
                         <h3 id="mourning-dev-title" class="font-orbitron text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-ribbon text-slate-300" aria-hidden="true"></i> Página de luto</h3>
                         <p class="text-xs text-gray-400 mt-1">Muestra a todos los clientes un comunicado con el emblema de la plataforma y una cinta negra animada. Al activarlo, se publicará un aviso en el canal exclusivo de Discord.</p>
+                        <a href="#dev-ceo-announcements" class="mt-2 inline-flex items-center gap-2 text-xs text-[#a8b2ff] hover:text-white"><i class="fa-brands fa-discord" aria-hidden="true"></i>Configurar el bot y el canal exclusivo de luto</a>
                     </div>
                     <label class="flex items-center gap-3 text-sm text-white">
                         <input id="mourning-enabled" type="checkbox" class="h-5 w-5 accent-slate-400">
@@ -1059,10 +1060,22 @@
                         <span>Motivo del luto para los clientes</span>
                         <textarea id="mourning-message" maxlength="1000" rows="4" placeholder="Explica con respeto el motivo de este comunicado…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-slate-400">La comunidad de MODEOS EL OBI guarda luto. Acompañamos con respeto a quienes están pasando por este momento.</textarea>
                     </label>
-                    <p class="text-xs text-gray-400">Imagen del comunicado: añade una imagen desde Gestión de imágenes → Luto. Si la quitas, se mostrará automáticamente el logo con la cinta negra.</p>
+                    <form id="mourning-image-form" data-upload-slot="mourning" class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Imagen opcional</span><input id="mourning-image-file" type="file" accept="image/png,image/jpeg,image/webp" class="w-full text-xs text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-400/20 file:px-3 file:py-2 file:text-white"></label>
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Texto alternativo</span><input id="mourning-image-alt" type="text" maxlength="160" placeholder="Imagen del comunicado de luto" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs"></label>
+                        <div class="sm:col-span-2 flex flex-wrap items-center gap-2">
+                            <button type="submit" class="px-3 py-2.5 bg-slate-200 hover:bg-white text-slate-950 font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-image mr-1" aria-hidden="true"></i>Publicar imagen</button>
+                            <button id="remove-mourning-image" type="button" onclick="deleteSiteImage('mourning')" disabled class="px-3 py-2.5 border border-white/20 hover:bg-white/10 text-white rounded-xl text-xs disabled:opacity-40 disabled:cursor-not-allowed">Quitar imagen y usar logo</button>
+                            <span id="mourning-image-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                        </div>
+                    </form>
                     <div class="flex items-center gap-3">
                         <button id="save-mourning-state" type="button" onclick="saveMourningState()" class="px-4 py-2.5 bg-slate-200 hover:bg-white text-slate-950 font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-ribbon mr-1" aria-hidden="true"></i>Guardar página de luto</button>
                         <span id="mourning-state-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button id="send-mourning-discord" type="button" onclick="sendMourningAnnouncement()" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-brands fa-discord mr-1" aria-hidden="true"></i>Enviar comunicado a Discord ahora</button>
+                        <span id="mourning-discord-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                     </div>
                 </section>
                 <section class="space-y-4 border-t border-white/10 pt-5">
@@ -1317,7 +1330,8 @@
             mourning: false,
             mourningMessage: 'La comunidad de MODEOS EL OBI guarda luto. Acompañamos con respeto a quienes están pasando por este momento.',
             platformStatus: 'activo',
-            messages: []
+            messages: [],
+            botAnnouncements: []
         };
 
         let botConfig = {
@@ -1341,8 +1355,10 @@
             updateLocalClock();
             setInterval(updateLocalClock, 1000);
             document.getElementById('dev-image-form').addEventListener('submit', handleSiteImageUpload);
+            document.getElementById('mourning-image-form').addEventListener('submit', handleSiteImageUpload);
             document.getElementById('dev-image-slot').addEventListener('change', updateImageDeleteButton);
             document.getElementById('site-message-form').addEventListener('submit', publishSiteMessage);
+            document.getElementById('bot-announcement-form').addEventListener('submit', publishBotAnnouncement);
             document.getElementById('live-event-form').addEventListener('submit', announceLiveEvent);
             document.getElementById('save-live-event-config').addEventListener('click', saveLiveAnnouncementConfig);
             document.getElementById('video-announcement-form').addEventListener('submit', saveVideoAnnouncementConfig);
@@ -1511,7 +1527,8 @@
             const channelIds = {
                 developer_announcement: 'dev-channel-announcements',
                 platform_status: 'dev-channel-status',
-                live_started: 'dev-channel-live'
+                live_started: 'dev-channel-live',
+                mourning_announcement: 'dev-channel-mourning'
             };
             const selects = Object.values(channelIds).map(id => document.getElementById(id));
             const saveButton = document.getElementById('dev-notification-channels-save');
@@ -1552,7 +1569,8 @@
                 const labels = {
                     developer_announcement: 'Comunicados',
                     platform_status: 'Estado web',
-                    live_started: 'Directos'
+                    live_started: 'Directos',
+                    mourning_announcement: 'Luto'
                 };
                 routesStatus.textContent = routes.length
                     ? `Avisos configurados: ${routes.map(route => `${labels[route.event_type]} → ${route.bot_name} (servidor ${route.guild_id})`).join(' · ')}`
@@ -1569,6 +1587,16 @@
             showLoadingState(list, 'Cargando controles de bots…');
             try {
                 const devBots = await apiRequest('/api/dev/bots');
+                const announcementSources = document.getElementById('bot-announcement-sources');
+                if (announcementSources) {
+                    const selectedIds = new Set(Array.from(announcementSources.selectedOptions, option => option.value));
+                    announcementSources.replaceChildren();
+                    devBots.forEach(bot => {
+                        const option = new Option(`${bot.bot_name}${bot.connected ? '' : ' (desconectado)'}`, String(bot.id));
+                        option.selected = selectedIds.has(String(bot.id));
+                        announcementSources.add(option);
+                    });
+                }
                 list.replaceChildren();
                 devBots.forEach(bot => {
                     const row = document.createElement('div');
@@ -1836,7 +1864,8 @@
             const channelFields = [
                 ['developer_announcement', 'dev-channel-announcements'],
                 ['platform_status', 'dev-channel-status'],
-                ['live_started', 'dev-channel-live']
+                ['live_started', 'dev-channel-live'],
+                ['mourning_announcement', 'dev-channel-mourning']
             ];
             if (channelFields.some(([, id]) => !document.getElementById(id).value)) {
                 feedback.textContent = 'Selecciona un canal para cada tipo de aviso.';
@@ -1855,7 +1884,7 @@
                         })
                     });
                 }
-                feedback.textContent = 'Se guardaron los canales de comunicados, estado web y directos.';
+                feedback.textContent = 'Se guardaron los canales de comunicados, estado web, directos y luto.';
                 await loadNotificationRoutes();
             } catch (error) {
                 feedback.textContent = `No se pudieron guardar todos los canales: ${error.message}`;
@@ -1959,6 +1988,52 @@
         function renderSiteMessages() {
             renderMessageList(document.getElementById('public-site-messages'), false);
             renderMessageList(document.getElementById('dev-site-messages'), true);
+            renderBotAnnouncements();
+        }
+
+        function renderBotAnnouncements() {
+            const renderList = (container, canDelete) => {
+                if (!container) return;
+                container.replaceChildren();
+                const announcements = siteState.botAnnouncements || [];
+                if (!announcements.length && !canDelete) {
+                    const empty = document.createElement('li');
+                    empty.className = 'text-xs text-gray-500';
+                    empty.textContent = 'Todavía no hay comunicados de bots.';
+                    container.append(empty);
+                    return;
+                }
+                announcements.forEach(announcement => {
+                    const item = document.createElement('li');
+                    item.className = 'flex items-start justify-between gap-3 border border-[#5865F2]/20 bg-black/35 rounded-xl px-4 py-3';
+                    const body = document.createElement('div');
+                    body.className = 'min-w-0 flex-1 space-y-2';
+                    const sources = document.createElement('p');
+                    sources.className = 'text-[10px] font-orbitron font-bold uppercase tracking-wider text-[#a8b2ff]';
+                    sources.textContent = (announcement.bots || []).map(bot => bot.name).join(' · ') || 'Bot de MODEOS EL OBI';
+                    const content = document.createElement('p');
+                    content.className = 'text-sm text-gray-200 whitespace-pre-wrap break-words';
+                    content.textContent = announcement.content;
+                    const time = document.createElement('time');
+                    time.className = 'text-[10px] text-gray-500';
+                    time.dateTime = announcement.created_at;
+                    time.textContent = new Date(announcement.created_at).toLocaleDateString('es-ES');
+                    body.append(sources, content, time);
+                    item.append(body);
+                    if (canDelete) {
+                        const remove = document.createElement('button');
+                        remove.type = 'button';
+                        remove.className = 'px-2 py-1 text-red-300 hover:text-white border border-red-400/30 rounded-lg';
+                        remove.setAttribute('aria-label', 'Eliminar comunicado de bot');
+                        remove.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i>';
+                        remove.addEventListener('click', () => deleteBotAnnouncement(announcement.announcement_id));
+                        item.append(remove);
+                    }
+                    container.append(item);
+                });
+            };
+            renderList(document.getElementById('public-bot-announcements'), false);
+            renderList(document.getElementById('dev-bot-announcements'), true);
         }
 
         function renderMessageList(container, canDelete) {
@@ -2039,14 +2114,21 @@
                 siteState = state;
                 renderSiteState();
                 await loadBots();
-                status.textContent = 'Estado global actualizado.';
-                showToast(status.textContent);
+                status.textContent = getMourningDeliveryStatus(state, 'Estado global actualizado.');
+                showToast(status.textContent, state.mourningNotification?.delivered === false ? 'error' : 'success');
             } catch (error) {
                 status.textContent = `No se pudo guardar: ${error.message}`;
                 showToast(status.textContent, 'error');
             } finally {
                 button.disabled = false;
             }
+        }
+
+        function getMourningDeliveryStatus(state, fallback) {
+            const notification = state.mourningNotification;
+            if (!state.mourning || !notification) return fallback;
+            if (notification.delivered) return 'Página de luto actualizada y comunicado enviado al canal exclusivo de Discord.';
+            return `Página actualizada, pero Discord no pudo enviar el comunicado: ${notification.error || 'revisa el bot y el canal de luto.'}`;
         }
 
         async function saveMourningState() {
@@ -2062,15 +2144,38 @@
                         maintenanceMessage: siteState.maintenanceMessage,
                         mourning: document.getElementById('mourning-enabled').checked,
                         mourningMessage: document.getElementById('mourning-message').value,
+                        sendMourningAnnouncement: true,
                         platformStatus: siteState.platformStatus
                     })
                 });
                 siteState = state;
                 renderSiteState();
-                status.textContent = 'Página de luto actualizada para todos los clientes.';
-                showToast(status.textContent);
+                status.textContent = getMourningDeliveryStatus(state, 'Página de luto actualizada para todos los clientes.');
+                showToast(status.textContent, state.mourningNotification?.delivered === false ? 'error' : 'success');
             } catch (error) {
                 status.textContent = `No se pudo guardar: ${error.message}`;
+                showToast(status.textContent, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function sendMourningAnnouncement() {
+            const button = document.getElementById('send-mourning-discord');
+            const status = document.getElementById('mourning-discord-status');
+            button.disabled = true;
+            status.textContent = 'Enviando al canal exclusivo…';
+            try {
+                const result = await apiRequest('/api/dev/mourning-announcements', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+                status.textContent = result.notification.delivered
+                    ? 'Comunicado enviado correctamente al canal de luto.'
+                    : 'El comunicado sigue pendiente de entrega en Discord.';
+                showToast(status.textContent, result.notification.delivered ? 'success' : 'error');
+            } catch (error) {
+                status.textContent = `No se pudo enviar: ${error.message}`;
                 showToast(status.textContent, 'error');
             } finally {
                 button.disabled = false;
@@ -2105,6 +2210,48 @@
                 showToast(status.textContent, 'error');
             } finally {
                 button.disabled = false;
+            }
+        }
+
+        async function publishBotAnnouncement(event) {
+            event.preventDefault();
+            const select = document.getElementById('bot-announcement-sources');
+            const content = document.getElementById('bot-announcement-content').value.trim();
+            const button = document.getElementById('bot-announcement-submit');
+            const status = document.getElementById('bot-announcement-status');
+            const botIds = Array.from(select.selectedOptions, option => option.value);
+            if (!botIds.length || !content) {
+                status.textContent = 'Selecciona al menos un bot y escribe el comunicado.';
+                showToast(status.textContent, 'error');
+                return;
+            }
+            button.disabled = true;
+            status.textContent = 'Publicando en el tablón…';
+            try {
+                const result = await apiRequest('/api/dev/bot-announcements', {
+                    method: 'POST',
+                    body: JSON.stringify({ botIds, content })
+                });
+                siteState = result.state;
+                document.getElementById('bot-announcement-content').value = '';
+                renderSiteMessages();
+                status.textContent = 'Comunicado publicado en el Lobby.';
+                showToast(status.textContent);
+            } catch (error) {
+                status.textContent = `No se pudo publicar: ${error.message}`;
+                showToast(status.textContent, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function deleteBotAnnouncement(announcementId) {
+            try {
+                siteState = await apiRequest(`/api/dev/bot-announcements/${encodeURIComponent(announcementId)}`, { method: 'DELETE' });
+                renderSiteMessages();
+                document.getElementById('bot-announcement-status').textContent = 'Comunicado retirado.';
+            } catch (error) {
+                document.getElementById('bot-announcement-status').textContent = `No se pudo retirar: ${error.message}`;
             }
         }
 
@@ -2247,6 +2394,7 @@
                 placeholder.classList.add('hidden');
             });
             updateImageDeleteButton();
+            document.getElementById('remove-mourning-image').disabled = !siteImages.some(image => image.slot === 'mourning');
         }
 
         function renderDevImageList() {
@@ -2261,7 +2409,7 @@
                 preview.className = 'w-full aspect-[16/7] object-cover';
                 const label = document.createElement('p');
                 label.className = 'p-2 text-xs text-gray-300 font-orbitron';
-                label.textContent = { lobby: 'Portada', modelos: 'Modelos', directos: 'Directos' }[imageData.slot];
+                label.textContent = { lobby: 'Portada', modelos: 'Modelos', directos: 'Directos', mourning: 'Luto' }[imageData.slot];
                 item.append(preview, label);
                 list.append(item);
             });
@@ -2284,9 +2432,13 @@
 
         async function handleSiteImageUpload(event) {
             event.preventDefault();
-            const fileInput = document.getElementById('dev-image-file');
-            const status = document.getElementById('dev-image-status');
-            const submit = document.getElementById('dev-image-submit');
+            const form = event.currentTarget;
+            const fileInput = form.querySelector('input[type="file"]');
+            const status = form.querySelector('[role="status"]');
+            const submit = form.querySelector('button[type="submit"]');
+            const slot = form.dataset.uploadSlot || document.getElementById('dev-image-slot').value;
+            const altInput = form.querySelector('[data-image-alt]')
+                || document.getElementById(slot === 'mourning' ? 'mourning-image-alt' : 'dev-image-alt');
             const file = fileInput.files[0];
             if (!file) {
                 status.textContent = 'Selecciona una imagen.';
@@ -2306,11 +2458,10 @@
             submit.disabled = true;
             status.textContent = 'Publicando...';
             try {
-                const slot = document.getElementById('dev-image-slot').value;
                 const image = await readImageFile(file);
                 await apiRequest(`/api/dev/images/${slot}`, {
                     method: 'PUT',
-                    body: JSON.stringify({ image, alt: document.getElementById('dev-image-alt').value.trim() })
+                    body: JSON.stringify({ image, alt: altInput.value.trim() })
                 });
                 await loadSiteImages();
                 fileInput.value = '';
@@ -2324,9 +2475,9 @@
             }
         }
 
-        async function deleteSiteImage() {
-            const slot = document.getElementById('dev-image-slot').value;
-            const status = document.getElementById('dev-image-status');
+        async function deleteSiteImage(slotOverride = '') {
+            const slot = slotOverride || document.getElementById('dev-image-slot').value;
+            const status = document.getElementById(slot === 'mourning' ? 'mourning-image-status' : 'dev-image-status');
             try {
                 await apiRequest(`/api/dev/images/${slot}`, { method: 'DELETE' });
                 siteImages = siteImages.filter(image => image.slot !== slot);

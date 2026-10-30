@@ -362,6 +362,7 @@ function asyncRoute(handler) {
 
 function configuredNotificationChannel(notification) {
   const channelEnvironment = notificationChannelEnvironment(notification);
+  if (notification.type === 'mourning_announcement') return process.env[channelEnvironment] || null;
   return process.env[channelEnvironment] || process.env.DISCORD_ANNOUNCEMENTS_CHANNEL_ID || null;
 }
 
@@ -447,15 +448,42 @@ async function deliverQueuedNotification(notificationId) {
   }
 }
 
-async function queueDiscordNotification(notification) {
+async function queueDiscordNotification(notification, { waitForDelivery = false } = {}) {
   const payload = createNotification({ ...notification, occurredAt: notification.occurredAt || now() });
   const { rows } = await database.query(
     'INSERT INTO discord_notification_outbox (event_type, payload) VALUES ($1, $2::jsonb) RETURNING id',
     [payload.type, JSON.stringify(payload)]
   );
   const notificationId = rows[0].id;
+  if (waitForDelivery) {
+    await deliverQueuedNotification(notificationId);
+    const deliveryResult = await database.query(
+      'SELECT delivered_at, last_error FROM discord_notification_outbox WHERE id = $1',
+      [notificationId]
+    );
+    const delivery = deliveryResult.rows[0];
+    return {
+      id: notificationId,
+      queued: true,
+      delivered: Boolean(delivery?.delivered_at),
+      error: delivery?.last_error || undefined
+    };
+  }
   void deliverQueuedNotification(notificationId);
   return { id: notificationId, queued: true };
+}
+
+async function queueMourningAnnouncement(state, options = {}) {
+  const imageResult = await database.query("SELECT updated_at FROM site_images WHERE slot = 'mourning'");
+  const imageUrl = imageResult.rows[0] && new URL(publicUrl).protocol === 'https:'
+    ? new URL(siteImageUrl('mourning', imageResult.rows[0].updated_at), publicUrl).toString()
+    : undefined;
+  return queueDiscordNotification(createNotification({
+    type: 'mourning_announcement',
+    title: 'En señal de luto',
+    message: state.mourningMessage,
+    imageUrl
+  }), options);
 }
 
 async function retryPendingNotifications() {
@@ -1187,6 +1215,10 @@ app.get('/api/site/updates', (request, response) => {
 
 app.put('/api/dev/site-state', requireDev, asyncRoute(async (request, response) => {
   const { maintenance, maintenanceMessage, mourning, mourningMessage, platformStatus } = request.body || {};
+  const forceMourningAnnouncement = request.body?.sendMourningAnnouncement === true;
+  if (request.body?.sendMourningAnnouncement !== undefined && typeof request.body.sendMourningAnnouncement !== 'boolean') {
+    return response.status(400).json({ error: 'sendMourningAnnouncement debe ser true o false.' });
+  }
   if (typeof maintenance !== 'boolean') {
     return response.status(400).json({ error: 'maintenance debe ser true o false.' });
   }
@@ -1214,9 +1246,29 @@ app.put('/api/dev/site-state', requireDev, asyncRoute(async (request, response) 
     platformStatus: platformStatus ?? previousState.platformStatus
   });
   const notification = await notifySiteStateChange(previousState, state);
+  let mourningNotification = null;
+  if (state.mourning && (forceMourningAnnouncement || !previousState.mourning || previousState.mourningMessage !== state.mourningMessage)) {
+    mourningNotification = await queueMourningAnnouncement(state, { waitForDelivery: true });
+  }
   await broadcastSiteUpdate();
   await logSecurity('site_state_updated', request, { maintenance });
-  response.json({ ...state, notification });
+  response.json({ ...state, notification, mourningNotification });
+}));
+
+app.post('/api/dev/mourning-announcements', requireDev, asyncRoute(async (_request, response) => {
+  const state = await readSiteState();
+  if (!state.mourning) {
+    return response.status(409).json({ error: 'Activa y guarda primero la página de luto.' });
+  }
+  const notification = await queueMourningAnnouncement(state, { waitForDelivery: true });
+  await logSecurity('mourning_announcement_sent', _request, { notificationId: notification.id, delivered: notification.delivered });
+  if (!notification.delivered) {
+    return response.status(503).json({
+      error: notification.error || 'El comunicado quedó en cola, pero Discord no confirmó el envío.',
+      notification
+    });
+  }
+  response.status(202).json({ ok: true, notification });
 }));
 
 app.post('/api/dev/site-messages', requireDev, asyncRoute(async (request, response) => {
@@ -1259,7 +1311,7 @@ app.post('/api/dev/bot-announcements', requireDev, asyncRoute(async (request, re
     [content]
   );
   await database.query(
-    'INSERT INTO bot_announcement_sources (announcement_id, bot_id) SELECT $1, selected_bot_id FROM unnest($2::bigint[]) AS selected_bot_id',
+    'INSERT INTO bot_announcement_sources (announcement_id, bot_id) SELECT $1, selected.bot_id FROM unnest($2::bigint[]) AS selected(bot_id)',
     [rows[0].announcement_id, botIds]
   );
   await logSecurity('bot_site_announcement_created', request, { announcementId: rows[0].announcement_id, botIds });

@@ -8,7 +8,8 @@ import {
   createBotEmbed,
   createNotification,
   createNotificationEmbed,
-  createNotificationMessage
+  createNotificationMessage,
+  notificationChannelEnvironment
 } from './discord-notifications.js';
 
 test('la estructura Discord usa categoria y canales Unicode ordenados', () => {
@@ -16,6 +17,8 @@ test('la estructura Discord usa categoria y canales Unicode ordenados', () => {
   assert.equal(DISCORD_NOTIFICATION_LAYOUT.channels.developer_announcement.position, 0);
   assert.equal(DISCORD_NOTIFICATION_LAYOUT.channels.platform_status.position, 1);
   assert.equal(DISCORD_NOTIFICATION_LAYOUT.channels.live_started.position, 2);
+  assert.equal(DISCORD_NOTIFICATION_LAYOUT.channels.mourning_announcement.position, 3);
+  assert.match(DISCORD_NOTIFICATION_LAYOUT.channels.mourning_announcement.name, /🕯️/u);
   assert.match(DISCORD_NOTIFICATION_LAYOUT.channels.live_started.name, /🎥/u);
 });
 
@@ -72,7 +75,7 @@ test('anuncios de desarrollador incluyen la autoria oficial y la web', () => {
   });
   const embed = createNotificationEmbed(notification);
 
-  assert.equal(embed.author.name, 'Desarrollador oficial de MODEOS EL OBI');
+  assert.equal(embed.author.name, 'CEO · MODEOS EL OBI');
   assert.equal(embed.color, DISCORD_EMBED_COLORS.info);
   assert.match(embed.title, /^📣/u);
   assert.equal(embed.url, MODEOS_WEB_URL);
@@ -107,6 +110,28 @@ test('avisos de directo conservan el enlace obligatorio', () => {
   assert.match(embed.title, /^🎥/u);
   assert.equal(embed.url, MODEOS_WEB_URL);
   assert.match(embed.fields.at(-1).value, new RegExp(MODEOS_WEB_URL.replaceAll('.', '\\.')));
+});
+
+test('el comunicado de luto incluye su canal, autoría, motivo e imagen HTTPS opcional', () => {
+  const notification = createNotification({
+    type: 'mourning_announcement',
+    title: 'En señal de luto',
+    message: 'La comunidad acompaña a la familia.',
+    imageUrl: 'https://modeos.example/api/site-images/mourning?v=1',
+    occurredAt: '2026-01-01T00:00:00.000Z'
+  });
+  const embed = createNotificationEmbed(notification);
+
+  assert.equal(notificationChannelEnvironment(notification), 'DISCORD_MOURNING_CHANNEL_ID');
+  assert.equal(embed.author.name, 'Comunicado de luto · MODEOS EL OBI');
+  assert.equal(embed.image.url, 'https://modeos.example/api/site-images/mourning?v=1');
+  assert.equal(embed.fields[0].value, 'En señal de luto');
+  assert.match(embed.title, /^🕯️/u);
+  assert.throws(() => createNotification({
+    type: 'mourning_announcement',
+    message: 'Motivo.',
+    imageUrl: 'http://modeos.example/luto.png'
+  }), /HTTPS/u);
 });
 
 test('la presencia coincide con activo, beta y mantenimiento', () => {

@@ -241,6 +241,10 @@ html {
 @keyframes emblemReveal { from { opacity: 0; transform: rotate(-12deg) scale(.6); } to { opacity: 1; transform: rotate(0) scale(1); } }
 @keyframes emblemFloat { 50% { translate: 0 -5px; } }
 .mourning-emblem-core { color: #e5e7eb; font-size: clamp(2.1rem, 7vw, 3.2rem); filter: drop-shadow(0 0 14px rgba(255,255,255,.25)); }
+.mourning-emblem-image { position: absolute; inset: 0; display: grid; margin: 0; overflow: hidden; place-items: center; border-radius: inherit; }
+.mourning-emblem-image > img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.08); }
+.mourning-emblem-image [data-image-placeholder] { display: grid; width: 100%; height: 100%; place-items: center; background: linear-gradient(145deg,#3b3d42,#17181c 70%); }
+.mourning-emblem-image [data-image-placeholder].hidden { display: none; }
 .mourning-ribbon { position: absolute; top: -8px; right: 15px; width: 20px; height: 52px; transform: rotate(38deg); border: 1px solid rgba(255,255,255,.4); background: linear-gradient(90deg,#08090b 0 35%,#34363a 50%,#08090b 70%); box-shadow: 0 3px 12px #000; }
 .mourning-ribbon::after { position: absolute; right: 0; bottom: -9px; left: 0; height: 12px; background: #111216; clip-path: polygon(0 0,100% 0,100% 100%,50% 68%,0 100%); content: ''; }
 .mourning-eyebrow { color: #aeb0b7; font-size: .65rem; font-weight: 700; letter-spacing: .22em; }
