@@ -980,13 +980,31 @@
                     </div>
                     <form id="site-message-form" class="space-y-2">
                         <label for="site-message-input" class="sr-only">Escribe un aviso</label>
-                        <textarea id="site-message-input" maxlength="1000" rows="3" placeholder="Escribe un aviso para la web..." class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea>
+                        <textarea id="site-message-input" maxlength="4000" rows="3" placeholder="Escribe un aviso para la web... (hasta 4.000 caracteres)" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea>
                         <div class="flex items-center gap-3">
                             <button id="site-message-submit" type="submit" class="px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-paper-plane mr-1"></i>Publicar aviso del CEO</button>
                             <span id="site-message-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                         </div>
                     </form>
                     <ol id="dev-site-messages" class="space-y-2"></ol>
+                    <section class="rounded-2xl border border-cyan-400/20 bg-cyan-950/15 p-4 space-y-4" aria-labelledby="writing-assistant-title">
+                        <div>
+                            <h4 id="writing-assistant-title" class="font-orbitron text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-pen-fancy text-cyan-300" aria-hidden="true"></i>Asistente de escritura</h4>
+                            <p class="text-xs text-gray-400 mt-1">Prepara un borrador desde tus datos, sin enviar el texto a servicios externos. Revisa el mensaje antes de publicarlo.</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="block space-y-1 text-xs text-gray-300"><span>Tipo de comunicado</span><select id="writer-kind" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white"><option value="ceo">Aviso del CEO</option><option value="bot">Comunicado de bots</option><option value="mourning">Comunicado de luto</option><option value="maintenance">Mantenimiento</option><option value="update">Novedad o actualización</option><option value="live">Anuncio de directo</option></select></label>
+                            <label class="block space-y-1 text-xs text-gray-300"><span>Tono</span><select id="writer-tone" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white"><option value="warm">Cercano y claro</option><option value="formal">Formal</option><option value="brief">Breve</option><option value="emotional">Emotivo</option></select></label>
+                        </div>
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Datos que deben aparecer</span><textarea id="writer-details" maxlength="4000" rows="3" placeholder="Escribe los hechos, fechas, cambios o motivo. El borrador solo usará esta información." class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-cyan-400"></textarea></label>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button id="writer-generate" type="button" class="px-3 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-wand-magic-sparkles mr-1" aria-hidden="true"></i>Crear borrador</button>
+                            <button id="writer-copy" type="button" class="px-3 py-2.5 border border-white/20 hover:bg-white/10 text-white rounded-xl text-xs">Copiar</button>
+                            <button id="writer-insert" type="button" class="px-3 py-2.5 border border-cyan-300/30 hover:bg-cyan-400/10 text-cyan-100 rounded-xl text-xs">Usar en este apartado</button>
+                            <span id="writer-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                        </div>
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Borrador editable (máximo 4.000 caracteres)</span><textarea id="writer-output" maxlength="4000" rows="8" placeholder="El borrador aparecerá aquí y podrás editarlo antes de usarlo." class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-cyan-400"></textarea><span id="writer-count" class="block text-right text-[10px] text-gray-500">0 / 4000</span></label>
+                    </section>
                 </section>
 </section>
                 <section class="space-y-4 border-b border-white/10 pb-5" aria-labelledby="dev-bot-announcements-title">
@@ -996,7 +1014,7 @@
                     </div>
                     <form id="bot-announcement-form" class="space-y-3">
                         <label class="block space-y-1 text-xs text-gray-300"><span>Bots que publican el comunicado</span><select id="bot-announcement-sources" multiple size="4" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" aria-describedby="bot-announcement-hint"></select><span id="bot-announcement-hint" class="block text-gray-500">En móvil toca para seleccionar; en ordenador usa Ctrl o Cmd para elegir varios.</span></label>
-                        <label class="block space-y-1 text-xs text-gray-300"><span>Comunicado</span><textarea id="bot-announcement-content" maxlength="1000" rows="3" placeholder="Escribe el comunicado de los bots seleccionados…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea></label>
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Comunicado (máximo 4.000 caracteres)</span><textarea id="bot-announcement-content" maxlength="4000" rows="5" placeholder="Escribe el comunicado de los bots seleccionados…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea></label>
                         <div class="flex items-center gap-3"><button id="bot-announcement-submit" type="submit" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-paper-plane mr-1"></i>Publicar comunicado</button><span id="bot-announcement-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span></div>
                     </form>
                     <ol id="dev-bot-announcements" class="space-y-2" aria-live="polite"></ol>
@@ -1058,7 +1076,7 @@
                     </label>
                     <label class="block space-y-1 text-xs text-gray-300">
                         <span>Motivo del luto para los clientes</span>
-                        <textarea id="mourning-message" maxlength="1000" rows="4" placeholder="Explica con respeto el motivo de este comunicado…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-slate-400">La comunidad de MODEOS EL OBI guarda luto. Acompañamos con respeto a quienes están pasando por este momento.</textarea>
+                        <textarea id="mourning-message" maxlength="4000" rows="6" placeholder="Explica con respeto el motivo de este comunicado (máximo 4.000 caracteres)…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-slate-400">La comunidad de MODEOS EL OBI guarda luto. Acompañamos con respeto a quienes están pasando por este momento.</textarea>
                     </label>
                     <form id="mourning-image-form" data-upload-slot="mourning" class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                         <label class="block space-y-1 text-xs text-gray-300"><span>Imagen opcional</span><input id="mourning-image-file" type="file" accept="image/png,image/jpeg,image/webp" class="w-full text-xs text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-400/20 file:px-3 file:py-2 file:text-white"></label>
@@ -1121,7 +1139,7 @@
                         </label>
                         <label class="block space-y-1 text-xs text-gray-300">
                             <span>Mensaje</span>
-                            <textarea id="live-event-message" maxlength="1000" rows="2" required class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">El directo oficial de MODEOS EL OBI ya ha comenzado.</textarea>
+                            <textarea id="live-event-message" maxlength="4000" rows="4" required class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">El directo oficial de MODEOS EL OBI ya ha comenzado.</textarea>
                         </label>
                         <label class="block space-y-1 text-xs text-gray-300">
                             <span>Canal destino opcional (ID)</span>
@@ -1151,7 +1169,7 @@
                         </label>
                         <label class="block space-y-1 text-xs text-gray-300 md:col-span-2">
                             <span>Texto del aviso</span>
-                            <textarea id="video-announcement-text" maxlength="1000" rows="3" required class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea>
+                            <textarea id="video-announcement-text" maxlength="4000" rows="5" required class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea>
                         </label>
                         <div class="flex flex-wrap items-center gap-3 md:col-span-2">
                             <label class="flex items-center gap-2 text-xs text-gray-300"><input id="video-announcement-active" type="checkbox" class="h-4 w-4 accent-[#00ffcc]">Configuración activa</label>
@@ -1359,6 +1377,10 @@
             document.getElementById('dev-image-slot').addEventListener('change', updateImageDeleteButton);
             document.getElementById('site-message-form').addEventListener('submit', publishSiteMessage);
             document.getElementById('bot-announcement-form').addEventListener('submit', publishBotAnnouncement);
+            document.getElementById('writer-generate').addEventListener('click', generateAnnouncementDraft);
+            document.getElementById('writer-copy').addEventListener('click', copyAnnouncementDraft);
+            document.getElementById('writer-insert').addEventListener('click', insertAnnouncementDraft);
+            document.getElementById('writer-output').addEventListener('input', updateAnnouncementDraftCount);
             document.getElementById('live-event-form').addEventListener('submit', announceLiveEvent);
             document.getElementById('save-live-event-config').addEventListener('click', saveLiveAnnouncementConfig);
             document.getElementById('video-announcement-form').addEventListener('submit', saveVideoAnnouncementConfig);
@@ -2243,6 +2265,82 @@
             } finally {
                 button.disabled = false;
             }
+        }
+
+        function generateAnnouncementDraft() {
+            const kind = document.getElementById('writer-kind').value;
+            const tone = document.getElementById('writer-tone').value;
+            const details = document.getElementById('writer-details').value.trim();
+            const status = document.getElementById('writer-status');
+            if (!details) {
+                status.textContent = 'Añade los datos reales que debe incluir el comunicado.';
+                return;
+            }
+
+            const closings = {
+                warm: 'Gracias por formar parte de MODEOS EL OBI.',
+                formal: 'Agradecemos su atención y comprensión.',
+                brief: '',
+                emotional: 'Gracias por acompañar a nuestra comunidad.'
+            };
+            const closing = closings[tone];
+            const drafts = {
+                ceo: `COMUNICADO DEL CEO\n\n${details}${closing ? `\n\n${closing}` : ''}`,
+                bot: `COMUNICADO DE LOS BOTS DE MODEOS EL OBI\n\n${details}${closing ? `\n\n${closing}` : ''}`,
+                mourning: `COMUNICADO DE LUTO\n\nLa comunidad de MODEOS EL OBI expresa su pesar.\n\n${details}\n\nAcompañamos con respeto a las personas afectadas.${tone === 'brief' ? '' : `\n\n${closing || 'Gracias por acompañarnos.'}`}`,
+                maintenance: `AVISO DE MANTENIMIENTO\n\n${details}${closing ? `\n\n${closing}` : ''}`,
+                update: `NOVEDAD DE MODEOS EL OBI\n\n${details}${closing ? `\n\n${closing}` : ''}`,
+                live: `ANUNCIO DE DIRECTO\n\n${details}${tone === 'brief' ? '' : '\n\nTe esperamos.'}${closing && tone !== 'brief' ? ` ${closing}` : ''}`
+            };
+            const output = document.getElementById('writer-output');
+            output.value = drafts[kind].slice(0, 4000);
+            updateAnnouncementDraftCount();
+            status.textContent = output.value.length === 4000
+                ? 'Borrador creado y ajustado al límite de 4.000 caracteres; revísalo.'
+                : 'Borrador creado. Comprueba los datos antes de publicarlo.';
+        }
+
+        function updateAnnouncementDraftCount() {
+            const output = document.getElementById('writer-output');
+            document.getElementById('writer-count').textContent = `${output.value.length} / 4000`;
+        }
+
+        async function copyAnnouncementDraft() {
+            const output = document.getElementById('writer-output').value;
+            const status = document.getElementById('writer-status');
+            if (!output.trim()) {
+                status.textContent = 'Crea o escribe primero un borrador.';
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(output);
+                status.textContent = 'Borrador copiado.';
+            } catch {
+                status.textContent = 'No se pudo acceder al portapapeles; selecciona y copia el texto manualmente.';
+            }
+        }
+
+        function insertAnnouncementDraft() {
+            const output = document.getElementById('writer-output').value.trim();
+            const status = document.getElementById('writer-status');
+            if (!output) {
+                status.textContent = 'Crea o escribe primero un borrador.';
+                return;
+            }
+            const targets = {
+                ceo: 'site-message-input',
+                bot: 'bot-announcement-content',
+                mourning: 'mourning-message',
+                maintenance: 'maintenance-message',
+                update: 'site-message-input',
+                live: 'live-event-message'
+            };
+            const target = document.getElementById(targets[document.getElementById('writer-kind').value]);
+            target.value = output.slice(0, Number(target.maxLength) || output.length);
+            target.focus();
+            status.textContent = target.value.length < output.length
+                ? 'Texto insertado hasta el límite de caracteres del campo. Revísalo.'
+                : 'Borrador insertado; revísalo antes de publicar.';
         }
 
         async function deleteBotAnnouncement(announcementId) {

@@ -12,7 +12,8 @@ export const DISCORD_NOTIFICATION_LAYOUT = Object.freeze({
 const WATCHING_ACTIVITY_TYPE = 3;
 
 const MAX_TITLE_LENGTH = 256;
-const MAX_MESSAGE_LENGTH = 4000;
+export const MAX_DISCORD_MESSAGE_LENGTH = 4000;
+const MAX_MESSAGE_LENGTH = MAX_DISCORD_MESSAGE_LENGTH;
 export const DISCORD_EMBED_COLORS = Object.freeze({
   success: 0x22c55e,
   error: 0xef4444,

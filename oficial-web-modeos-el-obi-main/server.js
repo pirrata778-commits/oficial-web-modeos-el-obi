@@ -9,6 +9,7 @@ import pg from 'pg';
 import { ChannelType, Client, Events, GatewayIntentBits, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import {
   DISCORD_NOTIFICATION_LAYOUT,
+  MAX_DISCORD_MESSAGE_LENGTH,
   MODEOS_WEB_URL,
   NotificationValidationError,
   PLATFORM_STATUSES,
@@ -125,12 +126,12 @@ try {
   );
   CREATE TABLE IF NOT EXISTS site_messages (
     message_id BIGSERIAL PRIMARY KEY,
-    content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 1000),
+    content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND ${MAX_DISCORD_MESSAGE_LENGTH}),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
   CREATE TABLE IF NOT EXISTS bot_site_announcements (
     announcement_id BIGSERIAL PRIMARY KEY,
-    content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 1000),
+    content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND ${MAX_DISCORD_MESSAGE_LENGTH}),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
   CREATE TABLE IF NOT EXISTS bots (
@@ -144,6 +145,12 @@ try {
     bot_id BIGINT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
     PRIMARY KEY (announcement_id, bot_id)
   );
+  ALTER TABLE site_messages DROP CONSTRAINT IF EXISTS site_messages_content_check;
+  ALTER TABLE site_messages ADD CONSTRAINT site_messages_content_check
+    CHECK (char_length(content) BETWEEN 1 AND ${MAX_DISCORD_MESSAGE_LENGTH});
+  ALTER TABLE bot_site_announcements DROP CONSTRAINT IF EXISTS bot_site_announcements_content_check;
+  ALTER TABLE bot_site_announcements ADD CONSTRAINT bot_site_announcements_content_check
+    CHECK (char_length(content) BETWEEN 1 AND ${MAX_DISCORD_MESSAGE_LENGTH});
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS discord_user_id TEXT;
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS client_id TEXT;
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS encrypted_token TEXT;
@@ -1228,8 +1235,8 @@ app.put('/api/dev/site-state', requireDev, asyncRoute(async (request, response) 
   if (mourning !== undefined && typeof mourning !== 'boolean') {
     return response.status(400).json({ error: 'mourning debe ser true o false.' });
   }
-  if (mourningMessage !== undefined && (typeof mourningMessage !== 'string' || mourningMessage.trim().length > 1000)) {
-    return response.status(400).json({ error: 'El mensaje de luto debe tener 1000 caracteres o menos.' });
+  if (mourningMessage !== undefined && (typeof mourningMessage !== 'string' || mourningMessage.trim().length > MAX_DISCORD_MESSAGE_LENGTH)) {
+    return response.status(400).json({ error: `El mensaje de luto debe tener ${MAX_DISCORD_MESSAGE_LENGTH} caracteres o menos.` });
   }
   if (mourning === true && typeof mourningMessage === 'string' && !mourningMessage.trim()) {
     return response.status(400).json({ error: 'Añade una explicación para los clientes antes de activar la página de luto.' });
@@ -1273,8 +1280,8 @@ app.post('/api/dev/mourning-announcements', requireDev, asyncRoute(async (_reque
 
 app.post('/api/dev/site-messages', requireDev, asyncRoute(async (request, response) => {
   const content = typeof request.body?.content === 'string' ? request.body.content.trim() : '';
-  if (!content || content.length > 1000) {
-    return response.status(400).json({ error: 'El mensaje debe tener entre 1 y 1000 caracteres.' });
+  if (!content || content.length > MAX_DISCORD_MESSAGE_LENGTH) {
+    return response.status(400).json({ error: `El mensaje debe tener entre 1 y ${MAX_DISCORD_MESSAGE_LENGTH} caracteres.` });
   }
   const { rows } = await database.query(
     'INSERT INTO site_messages (content) VALUES ($1) RETURNING message_id, content, created_at',
@@ -1294,8 +1301,8 @@ app.post('/api/dev/site-messages', requireDev, asyncRoute(async (request, respon
 app.post('/api/dev/bot-announcements', requireDev, asyncRoute(async (request, response) => {
   const content = typeof request.body?.content === 'string' ? request.body.content.trim() : '';
   const requestedBotIds = request.body?.botIds;
-  if (!content || content.length > 1000) {
-    return response.status(400).json({ error: 'El comunicado debe tener entre 1 y 1000 caracteres.' });
+  if (!content || content.length > MAX_DISCORD_MESSAGE_LENGTH) {
+    return response.status(400).json({ error: `El comunicado debe tener entre 1 y ${MAX_DISCORD_MESSAGE_LENGTH} caracteres.` });
   }
   if (!Array.isArray(requestedBotIds) || requestedBotIds.length < 1 || requestedBotIds.length > 10
     || requestedBotIds.some(id => !/^\d+$/.test(String(id)))) {
@@ -1356,7 +1363,7 @@ app.put('/api/dev/live-announcement-config', requireDev, asyncRoute(async (reque
   const message = typeof request.body?.message_template === 'string' ? request.body.message_template.trim() : '';
   const channelId = typeof request.body?.channel_id === 'string' ? request.body.channel_id.trim() : '';
   const isActive = request.body?.is_active;
-  if (!title || title.length > 256 || !message || message.length > 1000
+  if (!title || title.length > 256 || !message || message.length > MAX_DISCORD_MESSAGE_LENGTH
     || typeof isActive !== 'boolean' || (channelId && !/^\d{17,20}$/.test(channelId))) {
     return response.status(400).json({ error: 'Revisa el título, mensaje, canal y estado del anuncio de directo.' });
   }
@@ -1388,7 +1395,7 @@ app.put('/api/dev/video-announcement-config', requireDev, asyncRoute(async (requ
   const targetChannelId = typeof request.body?.target_channel_id === 'string' ? request.body.target_channel_id.trim() : '';
   const notificationText = typeof request.body?.notification_text === 'string' ? request.body.notification_text.trim() : '';
   const isActive = request.body?.is_active;
-  if (!title || title.length > 256 || !notificationText || notificationText.length > 1000
+  if (!title || title.length > 256 || !notificationText || notificationText.length > MAX_DISCORD_MESSAGE_LENGTH
     || typeof isActive !== 'boolean' || (targetChannelId && !/^\d{17,20}$/.test(targetChannelId))) {
     return response.status(400).json({ error: 'Revisa el título, texto, canal destino y estado del aviso de vídeo.' });
   }
