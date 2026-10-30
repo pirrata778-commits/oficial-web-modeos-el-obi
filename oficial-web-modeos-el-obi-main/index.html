@@ -916,7 +916,19 @@
                         <i class="fa-solid fa-lock"></i><span class="font-orbitron">Bloquear</span>
                     </button>
                 </div>
-                <section class="space-y-4 border-b border-white/10 pb-5">
+                <nav class="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="Accesos rápidos de la zona DEV">
+                    <a href="#dev-ceo-announcements" class="flex items-center gap-3 rounded-2xl border border-violet-400/30 bg-violet-500/10 p-4 text-white hover:bg-violet-500/20">
+                        <i class="fa-solid fa-bullhorn text-violet-300" aria-hidden="true"></i>
+                        <span class="font-orbitron text-xs font-bold">Avisos de CEO</span>
+                        <i class="fa-solid fa-arrow-down ml-auto text-xs text-violet-300" aria-hidden="true"></i>
+                    </a>
+                    <a href="#dev-mourning-section" class="flex items-center gap-3 rounded-2xl border border-slate-300/25 bg-slate-500/10 p-4 text-white hover:bg-slate-500/20">
+                        <i class="fa-solid fa-ribbon text-slate-300" aria-hidden="true"></i>
+                        <span class="font-orbitron text-xs font-bold">Página de luto</span>
+                        <i class="fa-solid fa-arrow-down ml-auto text-xs text-slate-300" aria-hidden="true"></i>
+                    </a>
+                </nav>
+                <section id="dev-ceo-announcements" class="space-y-4 border-b border-white/10 pb-5 scroll-mt-6">
                     <div>
                         <h3 class="font-orbitron text-sm font-bold text-white">Avisos de CEO</h3>
                         <p class="text-xs text-gray-400 mt-1">Selecciona el bot oficial para enlazarlo con los avisos. Si todavía no está registrado, añade aquí su token; se cifra en el servidor y no vuelve a mostrarse.</p>
@@ -1011,7 +1023,7 @@
                         <span id="site-state-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                     </div>
                 </section>
-                <section class="space-y-4 border-t border-white/10 pt-5" aria-labelledby="mourning-dev-title">
+                <section id="dev-mourning-section" class="space-y-4 border-t border-white/10 pt-5 scroll-mt-6" aria-labelledby="mourning-dev-title">
                     <div>
                         <h3 id="mourning-dev-title" class="font-orbitron text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-ribbon text-slate-300" aria-hidden="true"></i> Página de luto</h3>
                         <p class="text-xs text-gray-400 mt-1">Muestra a todos los clientes un comunicado con el emblema de la plataforma y una cinta negra animada.</p>
