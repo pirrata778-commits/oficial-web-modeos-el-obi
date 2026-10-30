@@ -180,7 +180,7 @@ export function createNotificationEmbed(notification, thumbnailUrl) {
   const normalized = createNotification(notification);
   let status = 'info';
   let icon = '📣';
-  let author = 'Desarrollador oficial de MODEOS EL OBI';
+  let author = normalized.type === 'developer_announcement' ? 'CEO · MODEOS EL OBI' : 'Desarrollador oficial de MODEOS EL OBI';
   let fields = [{ name: 'Tipo', value: 'Comunicado oficial', inline: true }];
 
   if (normalized.type === 'platform_status') {

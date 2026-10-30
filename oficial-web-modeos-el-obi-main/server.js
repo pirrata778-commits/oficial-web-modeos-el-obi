@@ -1202,7 +1202,7 @@ app.post('/api/dev/site-messages', requireDev, asyncRoute(async (request, respon
   );
   const notification = await queueDiscordNotification(createNotification({
     type: 'developer_announcement',
-    title: 'Comunicado oficial',
+    title: 'Aviso del CEO',
     message: content
   }));
   await logSecurity('site_message_created', request, { messageId: rows[0].message_id });
@@ -1324,6 +1324,8 @@ app.post('/api/integrations/discord/events', asyncRoute(async (request, response
     state = await persistSiteState({
       maintenance: platformStatus === 'mantenimiento',
       maintenanceMessage: platformStatus === 'mantenimiento' ? notification.message : previousState.maintenanceMessage,
+      mourning: previousState.mourning,
+      mourningMessage: previousState.mourningMessage,
       platformStatus
     });
     await broadcastSiteUpdate();

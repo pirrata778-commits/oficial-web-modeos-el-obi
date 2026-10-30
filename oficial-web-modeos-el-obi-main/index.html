@@ -918,8 +918,8 @@
                 </div>
                 <section class="space-y-4 border-b border-white/10 pb-5">
                     <div>
-                        <h3 class="font-orbitron text-sm font-bold text-white">Añadir bot de Discord</h3>
-                        <p class="text-xs text-gray-400 mt-1">El token se cifra en el servidor y no vuelve a mostrarse. Añade el bot al servidor elegido con permiso para administrar canales.</p>
+                        <h3 class="font-orbitron text-sm font-bold text-white">Avisos de CEO</h3>
+                        <p class="text-xs text-gray-400 mt-1">Selecciona el bot oficial para enlazarlo con los avisos. Si todavía no está registrado, añade aquí su token; se cifra en el servidor y no vuelve a mostrarse.</p>
                     </div>
                     <form id="dev-add-bot-form" class="flex flex-col sm:flex-row gap-2">
                         <label class="sr-only" for="dev-new-bot-token">Token del bot</label>
@@ -939,7 +939,7 @@
                         </label>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
-                        <button id="dev-notification-setup" type="button" class="px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs">Crear y configurar canales</button>
+                        <button id="dev-notification-setup" type="button" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-brands fa-discord mr-1"></i>Conectar bot oficial y configurar canales</button>
                         <span id="dev-notification-feedback" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -949,7 +949,23 @@
                     </div>
                     <button id="dev-notification-channels-save" type="button" class="px-4 py-2.5 border border-white/20 hover:bg-white/10 text-white rounded-xl text-xs" disabled>Guardar canales seleccionados</button>
                     <p id="dev-notification-routes" class="text-xs text-gray-400" aria-live="polite"></p>
+                
+<section class="space-y-4 border-t border-white/10 pt-5">
+                    <div>
+                        <h3 class="font-orbitron text-sm font-bold text-white">Publicar avisos de CEO</h3>
+                        <p class="text-xs text-gray-400 mt-1">El comunicado aparecerá en Lobby y se enviará al canal enlazado con el bot oficial.</p>
+                    </div>
+                    <form id="site-message-form" class="space-y-2">
+                        <label for="site-message-input" class="sr-only">Escribe un aviso</label>
+                        <textarea id="site-message-input" maxlength="1000" rows="3" placeholder="Escribe un aviso para la web..." class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea>
+                        <div class="flex items-center gap-3">
+                            <button id="site-message-submit" type="submit" class="px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-paper-plane mr-1"></i>Publicar aviso del CEO</button>
+                            <span id="site-message-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                        </div>
+                    </form>
+                    <ol id="dev-site-messages" class="space-y-2"></ol>
                 </section>
+</section>
                 <section class="space-y-3 border-b border-white/10 pb-5">
                     <div class="flex items-center justify-between"><div><h3 class="font-orbitron text-sm font-bold text-white">Gestión de estados de bots</h3><p class="text-xs text-gray-400 mt-1">Los cambios se guardan en Neon. Acceso protegido por la sesión DEV.</p></div><button type="button" onclick="loadDevBots()" class="px-3 py-2 rounded-xl border border-white/15 text-xs text-gray-300">Actualizar</button></div>
                     <div id="dev-bots-list" class="space-y-2" aria-live="polite"></div>
@@ -990,23 +1006,27 @@
                         <span>Mensaje del mantenimiento</span>
                         <textarea id="maintenance-message" maxlength="500" rows="2" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]">Estamos realizando tareas de mantenimiento.</textarea>
                     </label>
-                    <div class="rounded-2xl border border-slate-400/20 bg-slate-950/60 p-4 sm:p-5 space-y-4">
-                        <div>
-                            <h3 class="font-orbitron text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-ribbon text-slate-300" aria-hidden="true"></i> Página de luto</h3>
-                            <p class="text-xs text-gray-400 mt-1">Muestra a todos los clientes un comunicado con el emblema de la plataforma y una cinta negra animada.</p>
-                        </div>
-                        <label class="flex items-center gap-3 text-sm text-white">
-                            <input id="mourning-enabled" type="checkbox" class="h-5 w-5 accent-slate-400">
-                            <span>Activar página de luto</span>
-                        </label>
-                        <label class="block space-y-1 text-xs text-gray-300">
-                            <span>Explicación para los clientes</span>
-                            <textarea id="mourning-message" maxlength="1000" rows="4" placeholder="Explica con respeto el motivo de este comunicado…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-slate-400">La comunidad de MODEOS EL OBI guarda luto. Acompañamos con respeto a quienes están pasando por este momento.</textarea>
-                        </label>
-                    </div>
                     <div class="flex items-center gap-3">
                         <button id="save-site-state" type="button" onclick="saveSiteState()" class="px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs">Guardar estado</button>
                         <span id="site-state-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
+                    </div>
+                </section>
+                <section class="space-y-4 border-t border-white/10 pt-5" aria-labelledby="mourning-dev-title">
+                    <div>
+                        <h3 id="mourning-dev-title" class="font-orbitron text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-ribbon text-slate-300" aria-hidden="true"></i> Página de luto</h3>
+                        <p class="text-xs text-gray-400 mt-1">Muestra a todos los clientes un comunicado con el emblema de la plataforma y una cinta negra animada.</p>
+                    </div>
+                    <label class="flex items-center gap-3 text-sm text-white">
+                        <input id="mourning-enabled" type="checkbox" class="h-5 w-5 accent-slate-400">
+                        <span>Activar página de luto</span>
+                    </label>
+                    <label class="block space-y-1 text-xs text-gray-300">
+                        <span>Motivo del luto para los clientes</span>
+                        <textarea id="mourning-message" maxlength="1000" rows="4" placeholder="Explica con respeto el motivo de este comunicado…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-slate-400">La comunidad de MODEOS EL OBI guarda luto. Acompañamos con respeto a quienes están pasando por este momento.</textarea>
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <button id="save-mourning-state" type="button" onclick="saveMourningState()" class="px-4 py-2.5 bg-slate-200 hover:bg-white text-slate-950 font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-ribbon mr-1" aria-hidden="true"></i>Guardar página de luto</button>
+                        <span id="mourning-state-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                     </div>
                 </section>
                 <section class="space-y-4 border-t border-white/10 pt-5">
@@ -1039,21 +1059,7 @@
                         </form>
                     </div>
                 </section>
-                <section class="space-y-4 border-t border-white/10 pt-5">
-                    <div>
-                        <h3 class="font-orbitron text-sm font-bold text-white">Mensajes públicos</h3>
-                        <p class="text-xs text-gray-400 mt-1">Los avisos publicados aparecen en Lobby para todas las visitas.</p>
-                    </div>
-                    <form id="site-message-form" class="space-y-2">
-                        <label for="site-message-input" class="sr-only">Escribe un aviso</label>
-                        <textarea id="site-message-input" maxlength="1000" rows="3" placeholder="Escribe un aviso para la web..." class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea>
-                        <div class="flex items-center gap-3">
-                            <button id="site-message-submit" type="submit" class="px-4 py-2.5 bg-[#9d00ff] hover:bg-[#8000cc] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-paper-plane mr-1"></i>Publicar aviso</button>
-                            <span id="site-message-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
-                        </div>
-                    </form>
-                    <ol id="dev-site-messages" class="space-y-2"></ol>
-                </section>
+                
                 <section class="space-y-4 border-t border-white/10 pt-5">
                     <div>
                         <h3 class="font-orbitron text-sm font-bold text-white">Inicio de directo</h3>
@@ -1599,9 +1605,10 @@
                 devBots.forEach(bot => {
                     notificationBot.add(new Option(`${bot.bot_name}${bot.connected ? '' : ' (desconectado)'}`, bot.id));
                 });
+                const officialBot = devBots.find(bot => /modeos\s*el\s*obi/i.test(bot.bot_name) && bot.connected);
                 notificationBot.value = devBots.some(bot => String(bot.id) === String(currentSelection))
                     ? String(currentSelection)
-                    : String(devBots.find(bot => bot.connected)?.id || '');
+                    : String(officialBot?.id || devBots.find(bot => bot.connected)?.id || '');
                 await loadDevBotGuilds();
                 await loadNotificationRoutes();
                 await loadDevCommandControls(devBots);
@@ -1996,6 +2003,34 @@
                 renderSiteState();
                 await loadBots();
                 status.textContent = 'Estado global actualizado.';
+                showToast(status.textContent);
+            } catch (error) {
+                status.textContent = `No se pudo guardar: ${error.message}`;
+                showToast(status.textContent, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function saveMourningState() {
+            const button = document.getElementById('save-mourning-state');
+            const status = document.getElementById('mourning-state-status');
+            button.disabled = true;
+            status.textContent = 'Guardando página de luto…';
+            try {
+                const state = await apiRequest('/api/dev/site-state', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        maintenance: siteState.maintenance,
+                        maintenanceMessage: siteState.maintenanceMessage,
+                        mourning: document.getElementById('mourning-enabled').checked,
+                        mourningMessage: document.getElementById('mourning-message').value,
+                        platformStatus: siteState.platformStatus
+                    })
+                });
+                siteState = state;
+                renderSiteState();
+                status.textContent = 'Página de luto actualizada para todos los clientes.';
                 showToast(status.textContent);
             } catch (error) {
                 status.textContent = `No se pudo guardar: ${error.message}`;
