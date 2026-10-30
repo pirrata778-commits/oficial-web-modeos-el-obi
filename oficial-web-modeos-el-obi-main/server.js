@@ -40,7 +40,7 @@ const secureSessionCookie = process.env.NODE_ENV === 'production'
 const sessionSameSite = frontendHostname !== backendHostname ? 'none' : 'lax';
 const redirectUri = `${process.env.PUBLIC_URL}/api/auth/discord/callback`;
 const { Pool } = pg;
-const siteImageSlots = new Set(['lobby', 'modelos', 'directos']);
+const siteImageSlots = new Set(['lobby', 'modelos', 'directos', 'mourning']);
 let configuredBots = [];
 const devCommandCatalog = [
   { name: 'ping', description: 'Consultar la latencia del bot' },
@@ -128,11 +128,21 @@ try {
     content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 1000),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+  CREATE TABLE IF NOT EXISTS bot_site_announcements (
+    announcement_id BIGSERIAL PRIMARY KEY,
+    content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 1000),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
   CREATE TABLE IF NOT EXISTS bots (
     id BIGSERIAL PRIMARY KEY,
     bot_name TEXT NOT NULL UNIQUE,
     discord_user_id TEXT,
     status TEXT NOT NULL DEFAULT 'beta' CHECK (status IN ('activo', 'beta', 'mantenimiento'))
+  );
+  CREATE TABLE IF NOT EXISTS bot_announcement_sources (
+    announcement_id BIGINT NOT NULL REFERENCES bot_site_announcements(announcement_id) ON DELETE CASCADE,
+    bot_id BIGINT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+    PRIMARY KEY (announcement_id, bot_id)
   );
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS discord_user_id TEXT;
   ALTER TABLE bots ADD COLUMN IF NOT EXISTS client_id TEXT;
@@ -197,6 +207,12 @@ try {
     delivered_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+  ALTER TABLE discord_notification_routes DROP CONSTRAINT IF EXISTS discord_notification_routes_event_type_check;
+  ALTER TABLE discord_notification_routes ADD CONSTRAINT discord_notification_routes_event_type_check
+    CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started', 'mourning_announcement'));
+  ALTER TABLE discord_notification_outbox DROP CONSTRAINT IF EXISTS discord_notification_outbox_event_type_check;
+  ALTER TABLE discord_notification_outbox ADD CONSTRAINT discord_notification_outbox_event_type_check
+    CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started', 'mourning_announcement'));
   INSERT INTO site_settings (setting_key, setting_value)
   VALUES ('maintenance', 'false'::jsonb),
          ('maintenance_message', '"Estamos realizando tareas de mantenimiento."'::jsonb),
@@ -1078,9 +1094,20 @@ app.get('/api/config', (_request, response) => {
 });
 
 async function readSiteState() {
-  const [settingsResult, messagesResult] = await Promise.all([
+  const [settingsResult, messagesResult, botAnnouncementsResult] = await Promise.all([
     database.query("SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('maintenance', 'maintenance_message', 'platform_status', 'mourning', 'mourning_message')"),
-    database.query('SELECT message_id, content, created_at FROM site_messages ORDER BY created_at DESC, message_id DESC LIMIT 100')
+    database.query('SELECT message_id, content, created_at FROM site_messages ORDER BY created_at DESC, message_id DESC LIMIT 100'),
+    database.query(`
+      SELECT announcement.announcement_id, announcement.content, announcement.created_at,
+             COALESCE(json_agg(json_build_object('id', bot.id, 'name', bot.bot_name)
+               ORDER BY bot.bot_name) FILTER (WHERE bot.id IS NOT NULL), '[]'::json) AS bots
+      FROM bot_site_announcements announcement
+      LEFT JOIN bot_announcement_sources source ON source.announcement_id = announcement.announcement_id
+      LEFT JOIN bots bot ON bot.id = source.bot_id
+      GROUP BY announcement.announcement_id
+      ORDER BY announcement.created_at DESC, announcement.announcement_id DESC
+      LIMIT 100
+    `)
   ]);
   const settings = Object.fromEntries(settingsResult.rows.map(row => [row.setting_key, row.setting_value]));
   const maintenance = settings.maintenance === true;
@@ -1091,7 +1118,8 @@ async function readSiteState() {
     mourning: settings.mourning === true,
     mourningMessage: typeof settings.mourning_message === 'string' ? settings.mourning_message : 'La comunidad de MODEOS EL OBI guarda luto. Acompañamos con respeto a quienes están pasando por este momento.',
     platformStatus: maintenance ? 'mantenimiento' : (configuredStatus === 'mantenimiento' ? 'activo' : configuredStatus),
-    messages: messagesResult.rows
+    messages: messagesResult.rows,
+    botAnnouncements: botAnnouncementsResult.rows
   };
 }
 
@@ -1209,6 +1237,48 @@ app.post('/api/dev/site-messages', requireDev, asyncRoute(async (request, respon
   const state = await readSiteState();
   await broadcastSiteUpdate();
   response.status(201).json({ message: rows[0], state, notification });
+}));
+
+app.post('/api/dev/bot-announcements', requireDev, asyncRoute(async (request, response) => {
+  const content = typeof request.body?.content === 'string' ? request.body.content.trim() : '';
+  const requestedBotIds = request.body?.botIds;
+  if (!content || content.length > 1000) {
+    return response.status(400).json({ error: 'El comunicado debe tener entre 1 y 1000 caracteres.' });
+  }
+  if (!Array.isArray(requestedBotIds) || requestedBotIds.length < 1 || requestedBotIds.length > 10
+    || requestedBotIds.some(id => !/^\d+$/.test(String(id)))) {
+    return response.status(400).json({ error: 'Selecciona entre 1 y 10 bots válidos.' });
+  }
+  const botIds = [...new Set(requestedBotIds.map(String))];
+  const bots = await database.query('SELECT id FROM bots WHERE id = ANY($1::bigint[])', [botIds]);
+  if (bots.rowCount !== botIds.length) {
+    return response.status(400).json({ error: 'Uno o más bots seleccionados ya no están registrados.' });
+  }
+  const { rows } = await database.query(
+    'INSERT INTO bot_site_announcements (content) VALUES ($1) RETURNING announcement_id',
+    [content]
+  );
+  await database.query(
+    'INSERT INTO bot_announcement_sources (announcement_id, bot_id) SELECT $1, selected_bot_id FROM unnest($2::bigint[]) AS selected_bot_id',
+    [rows[0].announcement_id, botIds]
+  );
+  await logSecurity('bot_site_announcement_created', request, { announcementId: rows[0].announcement_id, botIds });
+  const state = await readSiteState();
+  await broadcastSiteUpdate();
+  response.status(201).json({ state });
+}));
+
+app.delete('/api/dev/bot-announcements/:id', requireDev, asyncRoute(async (request, response) => {
+  if (!/^\d+$/.test(request.params.id)) return response.status(400).json({ error: 'Identificador de comunicado inválido.' });
+  const result = await database.query(
+    'DELETE FROM bot_site_announcements WHERE announcement_id = $1 RETURNING announcement_id',
+    [request.params.id]
+  );
+  if (!result.rowCount) return response.status(404).json({ error: 'No se encontró ese comunicado.' });
+  await logSecurity('bot_site_announcement_removed', request, { announcementId: result.rows[0].announcement_id });
+  const state = await readSiteState();
+  await broadcastSiteUpdate();
+  response.json(state);
 }));
 
 app.delete('/api/dev/site-messages/:id', requireDev, asyncRoute(async (request, response) => {

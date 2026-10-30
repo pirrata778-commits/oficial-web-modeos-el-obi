@@ -358,7 +358,10 @@
         <div class="mourning-stars" aria-hidden="true"></div>
         <div class="mourning-card">
             <div class="mourning-emblem" aria-hidden="true">
-                <span class="mourning-emblem-core"><i class="fa-solid fa-cube"></i></span>
+                <figure data-image-slot="mourning" class="mourning-emblem-image">
+                    <img data-slot-image class="hidden" alt="">
+                    <span data-image-placeholder class="mourning-emblem-core"><i class="fa-solid fa-cube"></i></span>
+                </figure>
                 <span class="mourning-ribbon"></span>
             </div>
             <p class="mourning-eyebrow font-orbitron">MODEOS EL OBI · COMUNICADO OFICIAL</p>
@@ -485,6 +488,13 @@
                     <span class="text-[10px] text-gray-500">Actualizaciones oficiales</span>
                 </div>
                 <ol id="public-site-messages" class="space-y-2" aria-live="polite"></ol>
+            </section>
+            <section class="space-y-3 border-t border-white/10 pt-4" aria-labelledby="public-bot-announcements-title">
+                <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                    <h2 id="public-bot-announcements-title" class="font-orbitron text-sm font-bold text-white">Comunicados de bots</h2>
+                    <span class="text-[10px] text-gray-500">Publicaciones oficiales</span>
+                </div>
+                <ol id="public-bot-announcements" class="space-y-2" aria-live="polite"></ol>
             </section>
         </section>
 
@@ -637,7 +647,7 @@
                         <div id="public-bots-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" aria-live="polite"></div>
                     </section>
                     <!-- Tarjetas de Estadísticas Rápidas -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div class="glass-panel p-4 rounded-2xl border-white/10 flex items-center space-x-3.5">
                             <div class="w-11 h-11 rounded-xl bg-[#5865F2]/20 border border-[#5865F2]/40 flex items-center justify-center text-[#8f9bff] text-lg">
                                 <i class="fa-solid fa-server"></i>
@@ -958,6 +968,7 @@
                         <label class="space-y-1 text-xs text-gray-300"><span>Canal de comunicados</span><select id="dev-channel-announcements" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
                         <label class="space-y-1 text-xs text-gray-300"><span>Canal de estado web</span><select id="dev-channel-status" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
                         <label class="space-y-1 text-xs text-gray-300"><span>Canal de directos</span><select id="dev-channel-live" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
+                        <label class="space-y-1 text-xs text-gray-300"><span>Canal exclusivo de luto</span><select id="dev-channel-mourning" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
                     </div>
                     <button id="dev-notification-channels-save" type="button" class="px-4 py-2.5 border border-white/20 hover:bg-white/10 text-white rounded-xl text-xs" disabled>Guardar canales seleccionados</button>
                     <p id="dev-notification-routes" class="text-xs text-gray-400" aria-live="polite"></p>
@@ -978,6 +989,18 @@
                     <ol id="dev-site-messages" class="space-y-2"></ol>
                 </section>
 </section>
+                <section class="space-y-4 border-b border-white/10 pb-5" aria-labelledby="dev-bot-announcements-title">
+                    <div>
+                        <h3 id="dev-bot-announcements-title" class="font-orbitron text-sm font-bold text-white">Tablón de comunicados de bots</h3>
+                        <p class="text-xs text-gray-400 mt-1">Selecciona uno o varios bots para atribuir el comunicado. Se mostrará en el Lobby junto a los avisos oficiales.</p>
+                    </div>
+                    <form id="bot-announcement-form" class="space-y-3">
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Bots que publican el comunicado</span><select id="bot-announcement-sources" multiple size="4" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" aria-describedby="bot-announcement-hint"></select><span id="bot-announcement-hint" class="block text-gray-500">Puedes seleccionar varios con Ctrl o Cmd.</span></label>
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Comunicado</span><textarea id="bot-announcement-content" maxlength="1000" rows="3" placeholder="Escribe el comunicado de los bots seleccionados…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-[#9d00ff]"></textarea></label>
+                        <div class="flex items-center gap-3"><button id="bot-announcement-submit" type="submit" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-paper-plane mr-1"></i>Publicar comunicado</button><span id="bot-announcement-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span></div>
+                    </form>
+                    <ol id="dev-bot-announcements" class="space-y-2" aria-live="polite"></ol>
+                </section>
                 <section class="space-y-3 border-b border-white/10 pb-5">
                     <div class="flex items-center justify-between"><div><h3 class="font-orbitron text-sm font-bold text-white">Gestión de estados de bots</h3><p class="text-xs text-gray-400 mt-1">Los cambios se guardan en Neon. Acceso protegido por la sesión DEV.</p></div><button type="button" onclick="loadDevBots()" class="px-3 py-2 rounded-xl border border-white/15 text-xs text-gray-300">Actualizar</button></div>
                     <div id="dev-bots-list" class="space-y-2" aria-live="polite"></div>
@@ -1026,7 +1049,7 @@
                 <section id="dev-mourning-section" class="space-y-4 border-t border-white/10 pt-5 scroll-mt-6" aria-labelledby="mourning-dev-title">
                     <div>
                         <h3 id="mourning-dev-title" class="font-orbitron text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-ribbon text-slate-300" aria-hidden="true"></i> Página de luto</h3>
-                        <p class="text-xs text-gray-400 mt-1">Muestra a todos los clientes un comunicado con el emblema de la plataforma y una cinta negra animada.</p>
+                        <p class="text-xs text-gray-400 mt-1">Muestra a todos los clientes un comunicado con el emblema de la plataforma y una cinta negra animada. Al activarlo, se publicará un aviso en el canal exclusivo de Discord.</p>
                     </div>
                     <label class="flex items-center gap-3 text-sm text-white">
                         <input id="mourning-enabled" type="checkbox" class="h-5 w-5 accent-slate-400">
@@ -1036,6 +1059,7 @@
                         <span>Motivo del luto para los clientes</span>
                         <textarea id="mourning-message" maxlength="1000" rows="4" placeholder="Explica con respeto el motivo de este comunicado…" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white text-xs outline-none focus:border-slate-400">La comunidad de MODEOS EL OBI guarda luto. Acompañamos con respeto a quienes están pasando por este momento.</textarea>
                     </label>
+                    <p class="text-xs text-gray-400">Imagen del comunicado: añade una imagen desde Gestión de imágenes → Luto. Si la quitas, se mostrará automáticamente el logo con la cinta negra.</p>
                     <div class="flex items-center gap-3">
                         <button id="save-mourning-state" type="button" onclick="saveMourningState()" class="px-4 py-2.5 bg-slate-200 hover:bg-white text-slate-950 font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-ribbon mr-1" aria-hidden="true"></i>Guardar página de luto</button>
                         <span id="mourning-state-status" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
@@ -1126,7 +1150,7 @@
                 <section class="space-y-4 border-t border-white/10 pt-5">
                     <div>
                         <h3 class="font-orbitron text-sm font-bold text-white">Gestión de imágenes</h3>
-                        <p class="text-xs text-gray-400 mt-1">Publica imágenes en la portada, Modelos o Directos. PNG, JPEG o WebP, máximo 2 MB.</p>
+                        <p class="text-xs text-gray-400 mt-1">Publica imágenes en la portada, Modelos, Directos o el comunicado de luto. PNG, JPEG o WebP, máximo 2 MB.</p>
                     </div>
                     <form id="dev-image-form" class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                         <label class="space-y-1 text-xs text-gray-300">
@@ -1135,6 +1159,7 @@
                                 <option value="lobby">Portada</option>
                                 <option value="modelos">Modelos</option>
                                 <option value="directos">Directos</option>
+                                <option value="mourning">Luto</option>
                             </select>
                         </label>
                         <label class="space-y-1 text-xs text-gray-300">

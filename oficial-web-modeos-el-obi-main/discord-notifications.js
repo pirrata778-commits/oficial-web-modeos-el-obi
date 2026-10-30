@@ -5,7 +5,8 @@ export const DISCORD_NOTIFICATION_LAYOUT = Object.freeze({
   channels: Object.freeze({
     developer_announcement: Object.freeze({ name: '📢・ａｎｕｎｃｉｏｓ', position: 0 }),
     platform_status: Object.freeze({ name: '🔴・ｅｓｔａｄｏ－ｗｅｂ', position: 1 }),
-    live_started: Object.freeze({ name: '🎥・ｄｉｒｅｃｔｏｓ', position: 2 })
+    live_started: Object.freeze({ name: '🎥・ｄｉｒｅｃｔｏｓ', position: 2 }),
+    mourning_announcement: Object.freeze({ name: '🕯️・ｌｕｔｏ', position: 3 })
   })
 });
 const WATCHING_ACTIVITY_TYPE = 3;
@@ -115,12 +116,22 @@ export function createNotification(input) {
     };
   }
 
-  throw new NotificationValidationError('type debe ser developer_announcement, platform_status o live_started.');
+  if (type === 'mourning_announcement') {
+    return {
+      type,
+      title: optionalText(input.title, 'title', MAX_TITLE_LENGTH, 'Comunicado de luto'),
+      message: requiredText(input.message ?? input.content, 'message', MAX_MESSAGE_LENGTH),
+      occurredAt
+    };
+  }
+
+  throw new NotificationValidationError('type debe ser developer_announcement, platform_status, live_started o mourning_announcement.');
 }
 
 export function notificationChannelEnvironment(notification) {
   if (notification.type === 'developer_announcement') return 'DISCORD_ANNOUNCEMENTS_CHANNEL_ID';
   if (notification.type === 'platform_status') return 'DISCORD_STATUS_CHANNEL_ID';
+  if (notification.type === 'mourning_announcement') return 'DISCORD_MOURNING_CHANNEL_ID';
   return 'DISCORD_LIVE_CHANNEL_ID';
 }
 
@@ -195,6 +206,11 @@ export function createNotificationEmbed(notification, thumbnailUrl) {
     icon = '🎥';
     author = 'Directo oficial de MODEOS EL OBI';
     fields = [{ name: 'Estado', value: 'EN DIRECTO', inline: true }];
+  } else if (normalized.type === 'mourning_announcement') {
+    status = 'info';
+    icon = '🕯️';
+    author = 'Comunicado de luto · MODEOS EL OBI';
+    fields = [{ name: 'Comunidad', value: 'En señal de luto', inline: true }];
   }
 
   return createBotEmbed({
