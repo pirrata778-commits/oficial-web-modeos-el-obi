@@ -200,10 +200,11 @@ try {
   VALUES (1)
   ON CONFLICT (config_id) DO NOTHING;
   CREATE TABLE IF NOT EXISTS discord_notification_routes (
-    event_type TEXT PRIMARY KEY CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started')),
-    bot_id BIGINT REFERENCES bots(id) ON DELETE SET NULL,
+    event_type TEXT NOT NULL CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started')),
+    bot_id BIGINT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
     guild_id TEXT NOT NULL,
-    channel_id TEXT NOT NULL
+    channel_id TEXT NOT NULL,
+    PRIMARY KEY (event_type, bot_id, guild_id)
   );
   CREATE TABLE IF NOT EXISTS discord_notification_outbox (
     id BIGSERIAL PRIMARY KEY,
@@ -217,6 +218,14 @@ try {
   ALTER TABLE discord_notification_routes DROP CONSTRAINT IF EXISTS discord_notification_routes_event_type_check;
   ALTER TABLE discord_notification_routes ADD CONSTRAINT discord_notification_routes_event_type_check
     CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started', 'mourning_announcement'));
+  DELETE FROM discord_notification_routes WHERE bot_id IS NULL;
+  ALTER TABLE discord_notification_routes DROP CONSTRAINT IF EXISTS discord_notification_routes_pkey;
+  ALTER TABLE discord_notification_routes DROP CONSTRAINT IF EXISTS discord_notification_routes_bot_id_fkey;
+  ALTER TABLE discord_notification_routes ALTER COLUMN bot_id SET NOT NULL;
+  ALTER TABLE discord_notification_routes ADD CONSTRAINT discord_notification_routes_bot_id_fkey
+    FOREIGN KEY (bot_id) REFERENCES bots(id) ON DELETE CASCADE;
+  ALTER TABLE discord_notification_routes ADD CONSTRAINT discord_notification_routes_pkey
+    PRIMARY KEY (event_type, bot_id, guild_id);
   ALTER TABLE discord_notification_outbox DROP CONSTRAINT IF EXISTS discord_notification_outbox_event_type_check;
   ALTER TABLE discord_notification_outbox ADD CONSTRAINT discord_notification_outbox_event_type_check
     CHECK (event_type IN ('developer_announcement', 'platform_status', 'live_started', 'mourning_announcement'));
@@ -339,9 +348,7 @@ async function configureNotificationChannels(instance, guild) {
     await database.query(`
       INSERT INTO discord_notification_routes (event_type, bot_id, guild_id, channel_id)
       VALUES ($1, $2, $3, $4)
-      ON CONFLICT (event_type) DO UPDATE SET
-        bot_id = EXCLUDED.bot_id,
-        guild_id = EXCLUDED.guild_id,
+      ON CONFLICT (event_type, bot_id, guild_id) DO UPDATE SET
         channel_id = EXCLUDED.channel_id
     `, [eventType, instance.databaseId, guild.id, channel.id]);
     destinations.push({ eventType, channelId: channel.id, channelName: channel.name });
@@ -398,49 +405,53 @@ async function deliverQueuedNotification(notificationId) {
     if (!queued || queued.delivered_at) return true;
     const notification = parseQueuedNotification(queued);
     const { rows: routeRows } = await database.query(
-      'SELECT bot_id, channel_id FROM discord_notification_routes WHERE event_type = $1',
+      'SELECT bot_id, guild_id, channel_id FROM discord_notification_routes WHERE event_type = $1 ORDER BY guild_id, bot_id',
       [notification.type]
     );
-    const route = routeRows[0];
-    let liveChannelId = null;
-    if (notification.type === 'live_started') {
-      const { rows: liveConfigRows } = await database.query(
-        'SELECT channel_id FROM live_announcement_config WHERE config_id = 1'
-      );
-      liveChannelId = liveConfigRows[0]?.channel_id || null;
-    }
-    const readyInstances = route
-      ? botInstances.filter(instance => instance.databaseId === route.bot_id && instance.client.isReady())
-      : botInstances.filter(instance => instance.client.isReady());
-    if (!readyInstances.length) throw new Error(route ? 'El bot configurado para esta notificacion no esta conectado.' : 'Ningun bot esta conectado.');
-
-    const channelId = liveChannelId || route?.channel_id || configuredNotificationChannel(notification);
-    if (!channelId || !/^\d{17,20}$/.test(channelId)) {
-      throw new Error(`Falta un ID valido para ${notificationChannelEnvironment(notification)}.`);
-    }
-    let deliveredBy = null;
-    let deliveryError = null;
-    for (const instance of readyInstances) {
+    const readyInstances = botInstances.filter(instance => instance.client.isReady());
+    if (!readyInstances.length) throw new Error('Ningun bot esta conectado.');
+    const destinations = routeRows.length
+      ? routeRows.map(route => ({
+        instance: readyInstances.find(bot => String(bot.databaseId) === String(route.bot_id)),
+        botId: route.bot_id,
+        guildId: route.guild_id,
+        channelId: route.channel_id
+      }))
+      : (() => {
+        const channelId = configuredNotificationChannel(notification);
+        if (!channelId || !/^\d{17,20}$/.test(channelId)) {
+          throw new Error(`Falta un ID valido para ${notificationChannelEnvironment(notification)}.`);
+        }
+        return [{ instance: readyInstances[0], channelId }];
+      })();
+    const deliveryErrors = [];
+    const deliveredBy = [];
+    for (const destination of destinations) {
+      const { instance, guildId, channelId } = destination;
+      if (!instance) {
+        deliveryErrors.push(`Bot ${destination.botId || ''} desconectado`);
+        continue;
+      }
       try {
         const channel = instance.client.channels.cache.get(channelId) || await instance.client.channels.fetch(channelId);
-        if (!channel?.isTextBased()) throw new Error('El canal configurado no admite mensajes de texto.');
-        await channel.send(createNotificationMessage(
-          notification,
-          instance.client.user.displayAvatarURL()
-        ));
-        deliveredBy = instance.name;
-        break;
+        if (!channel?.isTextBased() || (guildId && channel.guildId !== guildId)) {
+          throw new Error('El canal no es de texto o no pertenece al servidor configurado.');
+        }
+        await channel.send(createNotificationMessage(notification, instance.client.user.displayAvatarURL()));
+        deliveredBy.push(`${instance.name} (${guildId || 'canal global'})`);
       } catch (error) {
-        deliveryError = error;
+        deliveryErrors.push(`${instance.name}: ${error.message}`);
       }
     }
-    if (!deliveredBy) throw deliveryError || new Error('Ningun bot pudo enviar la notificacion.');
+    if (!deliveredBy.length || deliveryErrors.length) {
+      throw new Error(`Envío parcial: ${deliveredBy.length}/${destinations.length} destinos; ${deliveryErrors.join(' · ') || 'no se entregó en ningún destino'}`);
+    }
     await database.query(`
       UPDATE discord_notification_outbox
       SET delivered_at = NOW(), last_error = NULL
       WHERE id = $1 AND delivered_at IS NULL
     `, [notificationId]);
-    sendBotLog(`Notificacion ${notification.type} enviada por ${deliveredBy}.`);
+    sendBotLog(`Notificacion ${notification.type} enviada a ${deliveredBy.length} destinos: ${deliveredBy.join(', ')}.`);
     return true;
   } catch (error) {
     try {
@@ -1040,9 +1051,7 @@ app.put('/api/dev/bot-notifications', requireDev, asyncRoute(async (request, res
   await database.query(`
     INSERT INTO discord_notification_routes (event_type, bot_id, guild_id, channel_id)
     VALUES ($1, $2, $3, $4)
-    ON CONFLICT (event_type) DO UPDATE SET
-      bot_id = EXCLUDED.bot_id,
-      guild_id = EXCLUDED.guild_id,
+    ON CONFLICT (event_type, bot_id, guild_id) DO UPDATE SET
       channel_id = EXCLUDED.channel_id
   `, [eventType, instance.databaseId, guild.id, channel.id]);
   await logSecurity('discord_notification_route_updated', request, { eventType, botId: instance.databaseId, guildId, channelId });
@@ -1075,6 +1084,38 @@ app.post('/api/dev/bot-notifications/setup', requireDev, asyncRoute(async (reque
   });
   void retryPendingNotifications().catch(error => console.error('[DISCORD] No se pudieron reintentar las notificaciones:', error));
   response.json({ botName: instance.name, guildName: guild.name, ...setup });
+}));
+app.post('/api/dev/bot-notifications/setup-all', requireDev, asyncRoute(async (request, response) => {
+  const botIds = Array.isArray(request.body?.botIds)
+    ? [...new Set(request.body.botIds.map(String).filter(id => /^\d+$/.test(id)))]
+    : [];
+  if (!botIds.length || botIds.length > 25) {
+    return response.status(400).json({ error: 'Selecciona entre 1 y 25 bots para configurar sus servidores.' });
+  }
+  const results = [];
+  const failures = [];
+  for (const botId of botIds) {
+    const instance = botInstances.find(bot => String(bot.databaseId) === botId);
+    if (!instance?.client.isReady()) {
+      failures.push(`${instance?.name || `Bot ${botId}`}: no conectado`);
+      continue;
+    }
+    for (const guild of instance.client.guilds.cache.values()) {
+      try {
+        const setup = await configureNotificationChannels(instance, guild);
+        results.push({ botName: instance.name, guildName: guild.name, channelCount: setup.channels.length });
+      } catch (error) {
+        failures.push(`${instance.name} · ${guild.name}: ${error.message}`);
+      }
+    }
+  }
+  await logSecurity('discord_notification_channels_configured_all', request, {
+    botIds,
+    configuredGuilds: results.length,
+    failures: failures.length
+  });
+  void retryPendingNotifications().catch(error => console.error('[DISCORD] No se pudieron reintentar las notificaciones:', error));
+  response.json({ configured: results, failures });
 }));
 app.post('/api/dev/bot-status', requireDev, asyncRoute(async (request, response) => {
   const { botId, status } = request.body || {};

@@ -964,6 +964,10 @@
                         <button id="dev-notification-setup" type="button" class="px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-brands fa-discord mr-1"></i>Conectar bot oficial y configurar canales</button>
                         <span id="dev-notification-feedback" class="text-xs text-gray-400" role="status" aria-live="polite"></span>
                     </div>
+                    <div class="space-y-2 rounded-xl border border-indigo-400/20 bg-indigo-950/10 p-3">
+                        <label class="block space-y-1 text-xs text-gray-300"><span>Bots que publicarán en todos sus servidores conectados</span><select id="dev-notification-broadcast-bots" multiple size="4" class="w-full bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white"><option value="" disabled>Cargando bots…</option></select><small class="block text-gray-500">Selecciona varios con Ctrl o Cmd. Se crearán los canales exclusivos en cada servidor de esos bots.</small></label>
+                        <button id="dev-notification-setup-all" type="button" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-orbitron font-bold rounded-xl text-xs"><i class="fa-solid fa-tower-broadcast mr-1" aria-hidden="true"></i>Configurar todos los servidores seleccionados</button>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <label class="space-y-1 text-xs text-gray-300"><span>Canal de comunicados</span><select id="dev-channel-announcements" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
                         <label class="space-y-1 text-xs text-gray-300"><span>Canal de estado web</span><select id="dev-channel-status" class="bg-[#05050b] border border-white/20 rounded-xl px-3 py-3 text-white" disabled></select></label>
@@ -1613,6 +1617,18 @@
             showLoadingState(list, 'Cargando controles de bots…');
             try {
                 const devBots = await apiRequest('/api/dev/bots');
+                const broadcastBots = document.getElementById('dev-notification-broadcast-bots');
+                if (broadcastBots) {
+                    const selectedIds = new Set(Array.from(broadcastBots.selectedOptions, option => option.value));
+                    broadcastBots.replaceChildren();
+                    devBots.forEach(bot => {
+                        const option = new Option(`${bot.bot_name}${bot.connected ? '' : ' (desconectado)'}`, String(bot.id));
+                        option.selected = selectedIds.has(String(bot.id));
+                        option.disabled = !bot.connected;
+                        broadcastBots.add(option);
+                    });
+                    if (!devBots.length) broadcastBots.add(new Option('No hay bots registrados', ''));
+                }
                 const announcementSources = document.getElementById('bot-announcement-sources');
                 if (announcementSources) {
                     const selectedIds = new Set(Array.from(announcementSources.selectedOptions, option => option.value));
@@ -1935,6 +1951,32 @@
                     body: JSON.stringify({ botId, guildId })
                 });
                 feedback.textContent = `Avisos configurados con ${result.botName} en ${result.guildName}: ${result.channels.map(channel => channel.channelName).join(', ')}.`;
+                await loadNotificationRoutes();
+            } catch (error) {
+                feedback.textContent = error.message;
+            } finally {
+                button.disabled = false;
+            }
+        });
+        document.getElementById('dev-notification-setup-all').addEventListener('click', async () => {
+            const select = document.getElementById('dev-notification-broadcast-bots');
+            const botIds = Array.from(select.selectedOptions, option => option.value).filter(Boolean);
+            const feedback = document.getElementById('dev-notification-feedback');
+            const button = document.getElementById('dev-notification-setup-all');
+            if (!botIds.length) {
+                feedback.textContent = 'Selecciona uno o varios bots conectados.';
+                return;
+            }
+            button.disabled = true;
+            feedback.textContent = 'Configurando los canales en todos los servidores de los bots seleccionados…';
+            try {
+                const result = await apiRequest('/api/dev/bot-notifications/setup-all', {
+                    method: 'POST',
+                    body: JSON.stringify({ botIds })
+                });
+                const configured = `${result.configured.length} servidor(es) configurado(s)`;
+                const failed = result.failures.length ? ` · ${result.failures.length} con error: ${result.failures.join(' | ')}` : '';
+                feedback.textContent = `${configured}${failed}. Los siguientes comunicados se enviarán a todas las rutas configuradas.`;
                 await loadNotificationRoutes();
             } catch (error) {
                 feedback.textContent = error.message;
