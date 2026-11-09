@@ -357,7 +357,8 @@
         </div>
     </section>
 
-    <section id="mourning-screen" class="mourning-screen hidden fixed inset-0 z-[105] flex-col items-center justify-center p-6 text-center" aria-live="assertive" aria-labelledby="mourning-title">
+    <section id="mourning-screen" class="mourning-screen hidden fixed inset-0 z-[105] flex-col items-center justify-center p-6 text-center" aria-hidden="true" aria-live="assertive" aria-labelledby="mourning-title">
+        <button type="button" onclick="openDevModal()" class="mourning-admin-access"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Administración</button>
         <div class="mourning-stars" aria-hidden="true"></div>
         <div class="mourning-card">
             <div class="mourning-emblem" aria-hidden="true">
@@ -373,7 +374,6 @@
             <p id="mourning-public-message" class="mourning-message"></p>
             <p class="mourning-signature">Gracias por acompañarnos y comprender este momento.</p>
             <div class="mourning-status"><span aria-hidden="true"></span> COMUNIDAD MODEOS EL OBI</div>
-            <div><button type="button" onclick="openDevModal()" class="admin-access-btn mt-6">Acceso de administración</button></div>
         </div>
     </section>
 
@@ -466,6 +466,12 @@
                     </p>
                 </div>
             </div>
+            <section class="glass-panel relative overflow-hidden rounded-2xl border-[#9d00ff]/40 p-5 sm:p-6" aria-labelledby="community-teaser-title">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="space-y-2"><span class="text-[10px] font-orbitron font-bold uppercase tracking-widest text-[#00ffcc]">Nuevo · Comunidad</span><h2 id="community-teaser-title" class="font-orbitron text-base font-bold text-white sm:text-lg">Todo lo útil, en un solo lugar</h2><p class="max-w-2xl text-xs leading-relaxed text-gray-400">Busca bots y comunicados, guarda tus favoritos, consulta ayuda y ajusta la experiencia a tu gusto.</p></div>
+                    <button type="button" onclick="switchTab('comunidad')" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-[#00ffcc]/40 bg-[#00ffcc]/10 px-4 py-3 text-xs font-bold text-white hover:bg-[#00ffcc]/20">Abrir Centro de comunidad <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                </div>
+            </section>
             <section class="glass-panel relative overflow-hidden rounded-2xl border-[#5865F2]/50 p-5 sm:p-7" aria-labelledby="discord-support-title">
                 <div class="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#5865F2]/15 blur-3xl pointer-events-none"></div>
                 <div class="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -2250,8 +2256,12 @@
             document.getElementById('mourning-public-message').textContent = siteState.mourningMessage || '';
             document.getElementById('maintenance-screen').classList.toggle('hidden', !siteState.maintenance || isDevUnlocked);
             document.getElementById('maintenance-screen').classList.toggle('flex', siteState.maintenance && !isDevUnlocked);
-            document.getElementById('mourning-screen').classList.toggle('hidden', !siteState.mourning || isDevUnlocked);
-            document.getElementById('mourning-screen').classList.toggle('flex', siteState.mourning && !isDevUnlocked);
+            const mourningScreen = document.getElementById('mourning-screen');
+            const mourningVisible = Boolean(siteState.mourning && !isDevUnlocked);
+            mourningScreen.classList.toggle('hidden', !mourningVisible);
+            mourningScreen.classList.toggle('is-visible', mourningVisible);
+            mourningScreen.setAttribute('aria-hidden', String(!mourningVisible));
+            document.body.classList.toggle('mourning-active', mourningVisible);
             renderSiteMessages();
         }
 

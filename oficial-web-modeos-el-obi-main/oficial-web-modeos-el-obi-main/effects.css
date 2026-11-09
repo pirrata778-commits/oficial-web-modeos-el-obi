@@ -239,16 +239,42 @@ html.user-pref-compact main .glass-panel { padding: clamp(.85rem, 2vw, 1.25rem);
 .mourning-screen {
     z-index: 1110;
     isolation: isolate;
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    justify-content: flex-start;
     overflow-x: hidden;
     overflow-y: auto;
-    min-height: 100vh;
-    min-height: 100dvh;
+    overscroll-behavior: contain;
     box-sizing: border-box;
     padding-top: max(1.5rem, env(safe-area-inset-top));
     padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
     background: radial-gradient(ellipse at 50% 42%, #202126 0%, #101115 38%, #07080b 76%, #030408 100%);
     color: #f1f1f3;
 }
+.mourning-screen.is-visible { display: flex !important; }
+body.mourning-active { overflow: hidden; }
+.mourning-admin-access {
+    position: fixed;
+    z-index: 4;
+    top: max(.75rem, env(safe-area-inset-top));
+    right: max(.75rem, env(safe-area-inset-right));
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: .5rem;
+    border: 1px solid rgba(226,232,240,.25);
+    border-radius: 999px;
+    background: rgba(9,10,13,.92);
+    padding: .65rem 1rem;
+    color: #e5e7eb;
+    font: 700 .68rem 'Orbitron',sans-serif;
+    box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+.mourning-admin-access:hover { border-color: rgba(226,232,240,.55); background: #191a1f; }
 .mourning-screen::before,
 .mourning-screen::after {
     position: absolute;
@@ -258,6 +284,7 @@ html.user-pref-compact main .glass-panel { padding: clamp(.85rem, 2vw, 1.25rem);
     pointer-events: none;
 }
 .mourning-screen::before {
+    inset: 0;
     background: repeating-linear-gradient(115deg, transparent 0 95px, rgba(255,255,255,.025) 96px, transparent 97px 190px);
     animation: mourningRain 26s linear infinite;
 }
@@ -269,6 +296,7 @@ html.user-pref-compact main .glass-panel { padding: clamp(.85rem, 2vw, 1.25rem);
 .mourning-card {
     position: relative;
     z-index: 1;
+    box-sizing: border-box;
     width: min(100%, 680px);
     padding: clamp(2rem, 7vw, 4rem) clamp(1.25rem, 7vw, 4.5rem);
     border: 1px solid rgba(226,232,240,.14);
@@ -279,6 +307,7 @@ html.user-pref-compact main .glass-panel { padding: clamp(.85rem, 2vw, 1.25rem);
     animation: mourningArrival 1.2s cubic-bezier(.16,1,.3,1) both, mourningBreath 8s ease-in-out 1.2s infinite alternate;
     flex: 0 0 auto;
     margin: auto;
+    padding-top: clamp(3.25rem, 7vw, 4.5rem);
 }
 @keyframes mourningArrival { from { opacity: 0; transform: translateY(28px) scale(.96); filter: blur(8px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
 @keyframes mourningBreath { to { box-shadow: 0 35px 100px rgba(0,0,0,.68), inset 0 1px rgba(255,255,255,.1), 0 0 75px rgba(148,163,184,.12); } }
