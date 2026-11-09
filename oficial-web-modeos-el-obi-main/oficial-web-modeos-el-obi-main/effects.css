@@ -233,11 +233,11 @@ html.user-pref-compact main .glass-panel { padding: clamp(.85rem, 2vw, 1.25rem);
     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
 }
 
-#dev-modal { z-index: 1200; }
+#dev-modal { z-index: 20001 !important; }
 
 /* Página de luto: escena independiente, con movimiento suave y respeto a reduced-motion. */
 .mourning-screen {
-    z-index: 1110;
+    z-index: 20000 !important;
     isolation: isolate;
     display: none;
     position: fixed;
@@ -255,6 +255,7 @@ html.user-pref-compact main .glass-panel { padding: clamp(.85rem, 2vw, 1.25rem);
     background: radial-gradient(ellipse at 50% 42%, #202126 0%, #101115 38%, #07080b 76%, #030408 100%);
     color: #f1f1f3;
 }
+#mourning-screen { z-index: 20000 !important; }
 .mourning-screen.is-visible { display: flex !important; }
 body.mourning-active { overflow: hidden; }
 .mourning-admin-access {
@@ -352,7 +353,7 @@ body.mourning-active { overflow: hidden; }
 @keyframes mourningPulse { 50% { opacity: .35; transform: scale(.8); } }
 @media (max-width: 480px) { .mourning-card { border-radius: 22px; } .mourning-eyebrow { letter-spacing: .13em; font-size: .55rem; } }
 @media (max-width: 480px), (max-height: 620px) {
-    .mourning-screen { align-items: stretch; justify-content: flex-start; padding-right: max(1rem, env(safe-area-inset-right)); padding-left: max(1rem, env(safe-area-inset-left)); }
+    .mourning-screen { align-items: stretch; justify-content: flex-start; padding-top: max(4rem, calc(env(safe-area-inset-top) + 3rem)); padding-right: max(1rem, env(safe-area-inset-right)); padding-left: max(1rem, env(safe-area-inset-left)); }
     .mourning-card { width: 100%; padding-top: 1.5rem; padding-bottom: 1.5rem; }
     .mourning-status { margin-top: 1.1rem; }
 }
