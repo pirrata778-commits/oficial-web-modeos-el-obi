@@ -281,7 +281,7 @@
             .nav-links .nav-btn, .nav-action-btn { transition: none !important; }
         }
     </style>
-    <link rel="stylesheet" href="effects.css?v=community-mourning-fix-20261109">
+    <link rel="stylesheet" href="effects.css?v=community-suite-20261110">
 </head>
 <body class="min-h-screen flex flex-col cyber-grid relative selection:bg-[#00ffcc] selection:text-black">
 
@@ -322,6 +322,9 @@
             <button onclick="switchTab('comunidad')" class="nav-btn font-orbitron flex items-center space-x-2" data-target="comunidad">
                 <i class="fa-solid fa-satellite-dish text-sm"></i><span>Comunidad</span>
             </button>
+            <button onclick="switchTab('luto')" class="nav-btn font-orbitron flex items-center space-x-2" data-target="luto" hidden>
+                <i class="fa-solid fa-ribbon text-sm"></i><span>Luto</span>
+            </button>
             <button onclick="switchTab('dashboard')" class="nav-btn font-orbitron flex items-center space-x-2" data-target="dashboard">
                 <i class="fa-solid fa-robot text-sm"></i><span>Dashboard Bot</span>
             </button>
@@ -357,26 +360,6 @@
         </div>
     </section>
 
-    <section id="mourning-screen" class="mourning-screen hidden fixed inset-0 z-[20000] flex-col items-center justify-center p-6 text-center" aria-hidden="true" aria-live="assertive" aria-labelledby="mourning-title">
-        <button type="button" onclick="openDevModal()" class="mourning-admin-access"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Administración</button>
-        <div class="mourning-stars" aria-hidden="true"></div>
-        <div class="mourning-card">
-            <div class="mourning-emblem" aria-hidden="true">
-                <figure data-image-slot="mourning" class="mourning-emblem-image">
-                    <img data-slot-image class="hidden" alt="">
-                    <span data-image-placeholder class="mourning-emblem-core"><i class="fa-solid fa-cube"></i></span>
-                </figure>
-                <span class="mourning-ribbon"></span>
-            </div>
-            <p class="mourning-eyebrow font-orbitron">MODEOS EL OBI · COMUNICADO OFICIAL</p>
-            <h1 id="mourning-title" class="mourning-title font-orbitron">En señal de luto</h1>
-            <div class="mourning-divider" aria-hidden="true"><span></span><i class="fa-solid fa-dove"></i><span></span></div>
-            <p id="mourning-public-message" class="mourning-message"></p>
-            <p class="mourning-signature">Gracias por acompañarnos y comprender este momento.</p>
-            <div class="mourning-status"><span aria-hidden="true"></span> COMUNIDAD MODEOS EL OBI</div>
-        </div>
-    </section>
-
     <!-- Navegación Móvil Inferior -->
     <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#05050b]/98 backdrop-blur-2xl border-t border-[#00ffcc]/20 px-1 py-2 flex justify-around items-center">
         <button onclick="switchTab('lobby')" class="mobile-nav-btn flex flex-col items-center text-[#a855f7] p-1" data-target="lobby" aria-current="page">
@@ -394,6 +377,10 @@
         <button onclick="switchTab('comunidad')" class="mobile-nav-btn flex flex-col items-center text-gray-400 p-1" data-target="comunidad">
             <i class="fa-solid fa-satellite-dish text-sm mb-0.5"></i>
             <span class="text-[8px] font-bold font-orbitron">Comunidad</span>
+        </button>
+        <button onclick="switchTab('luto')" class="mobile-nav-btn flex flex-col items-center text-gray-400 p-1" data-target="luto" hidden>
+            <i class="fa-solid fa-ribbon text-sm mb-0.5"></i>
+            <span class="text-[8px] font-bold font-orbitron">Luto</span>
         </button>
         <button onclick="switchTab('dashboard')" class="mobile-nav-btn flex flex-col items-center text-gray-400 p-1" data-target="dashboard">
             <i class="fa-solid fa-robot text-sm mb-0.5"></i>
@@ -568,6 +555,28 @@
         </section>
 
         <!-- DASHBOARD (GESTIÓN DE BOTS) -->
+        <section id="tab-luto" class="tab-content hidden space-y-6" aria-labelledby="mourning-title">
+            <div class="mourning-page">
+                <div class="mourning-stars" aria-hidden="true"></div>
+                <article class="mourning-card">
+                    <div class="mourning-emblem" aria-hidden="true">
+                        <figure data-image-slot="mourning" class="mourning-emblem-image">
+                            <img data-slot-image class="hidden" alt="">
+                            <span data-image-placeholder class="mourning-emblem-core"><i class="fa-solid fa-cube"></i></span>
+                        </figure>
+                        <span class="mourning-ribbon"></span>
+                    </div>
+                    <p class="mourning-eyebrow font-orbitron">MODEOS EL OBI · COMUNICADO OFICIAL</p>
+                    <h1 id="mourning-title" class="mourning-title font-orbitron">En señal de luto</h1>
+                    <div class="mourning-divider" aria-hidden="true"><span></span><i class="fa-solid fa-dove"></i><span></span></div>
+                    <p id="mourning-public-message" class="mourning-message"></p>
+                    <p class="mourning-signature">Gracias por acompañarnos y comprender este momento.</p>
+                    <div class="mourning-status"><span aria-hidden="true"></span> COMUNIDAD MODEOS EL OBI</div>
+                    <button type="button" onclick="switchTab('lobby')" class="mourning-return"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al Lobby</button>
+                </article>
+            </div>
+        </section>
+
         <section id="tab-comunidad" class="tab-content hidden space-y-6" aria-labelledby="community-title">
             <header class="glass-panel relative overflow-hidden rounded-3xl border-[#9d00ff]/40 p-6 sm:p-10 space-y-4">
                 <span class="inline-flex items-center gap-2 rounded-full border border-[#00ffcc]/30 bg-[#00ffcc]/10 px-3 py-1 text-[10px] font-orbitron font-bold uppercase tracking-wider text-[#00ffcc]"><i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Centro de la comunidad</span>
@@ -588,9 +597,29 @@
                     <a href="privacy-policy.html" class="community-link-card"><i class="fa-solid fa-shield-halved text-purple-300"></i><strong>Privacidad</strong><small>Cómo se gestionan tus datos.</small></a>
                 </div>
             </section>
+            <section class="glass-panel rounded-2xl border-[#00ffcc]/20 p-5 sm:p-6 space-y-4" aria-labelledby="community-catalog-title">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div><h2 id="community-catalog-title" class="font-orbitron text-sm font-bold text-white"><i class="fa-solid fa-robot mr-2 text-[#00ffcc]" aria-hidden="true"></i>Catálogo público de bots</h2><p class="mt-1 text-xs text-gray-400">Busca por nombre, filtra por estado y guarda tus favoritos.</p></div>
+                    <button type="button" onclick="loadBots()" class="rounded-xl border border-white/15 px-3 py-2 text-xs text-gray-300 hover:bg-white/10"><i class="fa-solid fa-rotate mr-1" aria-hidden="true"></i>Actualizar</button>
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto]">
+                    <label class="community-filter"><span>Buscar bot</span><input id="community-bot-filter" type="search" placeholder="Nombre del bot…" autocomplete="off"></label>
+                    <label class="community-filter"><span>Estado</span><select id="community-status-filter"><option value="all">Todos</option><option value="activo">Activo</option><option value="beta">Beta</option><option value="mantenimiento">Mantenimiento</option></select></label>
+                    <label class="community-favorites-only"><input id="community-favorites-only" type="checkbox"><span>Solo favoritos</span></label>
+                </div>
+                <p id="community-catalog-count" class="text-xs text-gray-500" role="status" aria-live="polite"></p>
+                <div id="community-catalog-list" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite"><p class="text-xs text-gray-500">Cargando bots…</p></div>
+            </section>
             <section class="glass-panel rounded-2xl border-white/10 p-5 space-y-3" aria-labelledby="community-favorites-title">
                 <div class="flex flex-wrap items-center justify-between gap-2"><h2 id="community-favorites-title" class="font-orbitron text-sm font-bold text-white"><i class="fa-solid fa-star mr-2 text-amber-300" aria-hidden="true"></i>Mis bots favoritos</h2><span class="text-[10px] text-gray-500">Guardados en este navegador</span></div>
                 <div id="community-favorites" class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"></div>
+            </section>
+            <section class="glass-panel rounded-2xl border-white/10 p-5 sm:p-6 space-y-4" aria-labelledby="community-activity-title">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div><h2 id="community-activity-title" class="font-orbitron text-sm font-bold text-white"><i class="fa-solid fa-clock-rotate-left mr-2 text-purple-300" aria-hidden="true"></i>Archivo de novedades</h2><p class="mt-1 text-xs text-gray-400">Comunicados publicados por la web y los bots.</p></div>
+                    <label class="community-filter"><span>Mostrar</span><select id="community-activity-filter"><option value="all">Todo</option><option value="web">Avisos de la web</option><option value="bot">Comunicados de bots</option></select></label>
+                </div>
+                <ol id="community-activity-list" class="community-activity-list" aria-live="polite"></ol>
             </section>
             <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
                 <section class="glass-panel rounded-2xl border-white/10 p-5 sm:p-6 space-y-4" aria-labelledby="community-help-title">
@@ -1641,6 +1670,10 @@
                 applyCommunityPreferences({});
             });
             document.getElementById('community-search')?.addEventListener('input', renderCommunitySearch);
+            document.getElementById('community-bot-filter')?.addEventListener('input', renderCommunityCatalog);
+            document.getElementById('community-status-filter')?.addEventListener('change', renderCommunityCatalog);
+            document.getElementById('community-favorites-only')?.addEventListener('change', renderCommunityCatalog);
+            document.getElementById('community-activity-filter')?.addEventListener('change', renderCommunityActivity);
             document.addEventListener('keydown', event => {
                 if (event.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
                     event.preventDefault();
@@ -1658,6 +1691,7 @@
             try {
                 communityBots = await apiRequest('/api/bots');
                 renderPublicBots();
+                renderCommunityCatalog();
                 renderCommunitySearch();
             } catch (error) {
                 container.textContent = `No se pudo cargar el catálogo: ${error.message}`;
@@ -1692,12 +1726,123 @@
                     if (favorites.has(favoriteId)) favorites.delete(favoriteId); else favorites.add(favoriteId);
                     try { localStorage.setItem('modeos-community-favorites-v1', JSON.stringify([...favorites])); } catch { /* Guardado local opcional. */ }
                     renderPublicBots();
+                    renderCommunityCatalog();
                 });
                 card.append(name, status, favorite);
                 container.append(card);
             });
             if (!communityBots.length) container.textContent = 'No hay bots registrados.';
             renderCommunityFavorites();
+        }
+
+        function renderCommunityCatalog() {
+            const container = document.getElementById('community-catalog-list');
+            const count = document.getElementById('community-catalog-count');
+            if (!container || !count) return;
+            const query = (document.getElementById('community-bot-filter')?.value || '').trim().toLocaleLowerCase('es');
+            const statusFilter = document.getElementById('community-status-filter')?.value || 'all';
+            const favoritesOnly = Boolean(document.getElementById('community-favorites-only')?.checked);
+            const favorites = new Set(getCommunityFavorites());
+            const filtered = communityBots.filter(bot => {
+                const matchesName = String(bot.bot_name || '').toLocaleLowerCase('es').includes(query);
+                const matchesStatus = statusFilter === 'all' || bot.status === statusFilter;
+                const matchesFavorite = !favoritesOnly || favorites.has(getCommunityBotId(bot));
+                return matchesName && matchesStatus && matchesFavorite;
+            });
+            container.replaceChildren();
+            count.textContent = `${filtered.length} de ${communityBots.length} bots`;
+            if (!communityBots.length) {
+                container.textContent = 'El catálogo todavía no tiene bots publicados.';
+                return;
+            }
+            if (!filtered.length) {
+                container.textContent = favoritesOnly && !favorites.size ? 'Aún no tienes favoritos. Usa la estrella de una tarjeta para guardar un bot.' : 'No hay bots que coincidan con esos filtros.';
+                return;
+            }
+            const labels = { activo: ['Activo', 'is-online'], beta: ['Beta', 'is-beta'], mantenimiento: ['Mantenimiento', 'is-maintenance'] };
+            filtered.forEach(bot => {
+                const card = document.createElement('article');
+                card.className = 'community-bot-card';
+                const top = document.createElement('div');
+                top.className = 'community-bot-card-top';
+                const icon = document.createElement('span');
+                icon.className = 'community-bot-icon';
+                icon.innerHTML = '<i class="fa-solid fa-robot" aria-hidden="true"></i>';
+                const name = document.createElement('h3');
+                name.textContent = bot.bot_name || 'Bot de la comunidad';
+                const titleGroup = document.createElement('div');
+                titleGroup.className = 'community-bot-title';
+                titleGroup.append(icon, name);
+                const favorite = document.createElement('button');
+                favorite.type = 'button';
+                favorite.className = 'community-favorite-toggle';
+                const botId = getCommunityBotId(bot);
+                const selected = favorites.has(botId);
+                favorite.setAttribute('aria-pressed', String(selected));
+                favorite.setAttribute('aria-label', `${selected ? 'Quitar de' : 'Añadir a'} favoritos: ${bot.bot_name}`);
+                favorite.innerHTML = `<i class="fa-${selected ? 'solid' : 'regular'} fa-star" aria-hidden="true"></i>`;
+                favorite.addEventListener('click', () => {
+                    const next = new Set(getCommunityFavorites());
+                    if (next.has(botId)) next.delete(botId); else next.add(botId);
+                    try { localStorage.setItem('modeos-community-favorites-v1', JSON.stringify([...next])); } catch { /* Preferencias locales opcionales. */ }
+                    renderCommunityCatalog();
+                    renderCommunityFavorites();
+                    renderPublicBots();
+                });
+                top.append(titleGroup, favorite);
+                const badge = document.createElement('span');
+                const [statusLabel, statusClass] = labels[bot.status] || ['Estado no publicado', ''];
+                badge.className = `community-bot-status ${statusClass}`;
+                const dot = document.createElement('span');
+                dot.setAttribute('aria-hidden', 'true');
+                badge.append(dot, document.createTextNode(`${statusLabel}${bot.connected ? ' · Conectado' : ' · Sin conexión'}`));
+                const meta = document.createElement('p');
+                meta.className = 'community-bot-meta';
+                meta.textContent = bot.connected ? 'Conectado a Discord ahora mismo.' : 'No se ha detectado conexión en este momento.';
+                card.append(top, badge, meta);
+                container.append(card);
+            });
+        }
+
+        function renderCommunityActivity() {
+            const container = document.getElementById('community-activity-list');
+            if (!container) return;
+            const filter = document.getElementById('community-activity-filter')?.value || 'all';
+            const entries = [
+                ...(siteState.messages || []).map(item => ({ type: 'web', title: 'Aviso de la web', content: item.content || '', createdAt: item.created_at })),
+                ...(siteState.botAnnouncements || []).map(item => ({ type: 'bot', title: 'Comunicado de bot', content: item.content || '', createdAt: item.created_at }))
+            ].filter(item => item.content && (filter === 'all' || item.type === filter))
+                .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+            container.replaceChildren();
+            if (!entries.length) {
+                const empty = document.createElement('li');
+                empty.className = 'text-xs text-gray-500';
+                empty.textContent = 'No hay publicaciones en esta categoría.';
+                container.append(empty);
+                return;
+            }
+            entries.slice(0, 30).forEach(entry => {
+                const item = document.createElement('li');
+                item.className = 'community-activity-item';
+                const heading = document.createElement('div');
+                heading.className = 'community-activity-heading';
+                const label = document.createElement('span');
+                label.className = `community-activity-tag ${entry.type === 'bot' ? 'is-bot' : ''}`;
+                label.textContent = entry.title;
+                const date = document.createElement('time');
+                if (entry.createdAt) {
+                    const parsed = new Date(entry.createdAt);
+                    if (!Number.isNaN(parsed.valueOf())) {
+                        date.dateTime = parsed.toISOString();
+                        date.textContent = parsed.toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
+                    }
+                }
+                heading.append(label, date);
+                const body = document.createElement('p');
+                body.textContent = entry.content;
+                item.append(heading, body);
+                container.append(item);
+            });
         }
 
         function getCommunityBotId(bot) { return String(bot.bot_id || bot.id || bot.bot_name || ''); }
@@ -2256,12 +2401,12 @@
             document.getElementById('mourning-public-message').textContent = siteState.mourningMessage || '';
             document.getElementById('maintenance-screen').classList.toggle('hidden', !siteState.maintenance || isDevUnlocked);
             document.getElementById('maintenance-screen').classList.toggle('flex', siteState.maintenance && !isDevUnlocked);
-            const mourningScreen = document.getElementById('mourning-screen');
-            const mourningVisible = Boolean(siteState.mourning && !isDevUnlocked);
-            mourningScreen.classList.toggle('hidden', !mourningVisible);
-            mourningScreen.classList.toggle('is-visible', mourningVisible);
-            mourningScreen.setAttribute('aria-hidden', String(!mourningVisible));
-            document.body.classList.toggle('mourning-active', mourningVisible);
+            const mourningTab = document.getElementById('tab-luto');
+            const mourningEnabled = Boolean(siteState.mourning);
+            const mourningNavButtons = document.querySelectorAll('[data-target="luto"]');
+            mourningNavButtons.forEach(button => { button.hidden = !mourningEnabled; });
+            mourningTab.classList.toggle('hidden', !mourningEnabled || !mourningTab.classList.contains('is-active'));
+            if (!mourningEnabled && mourningTab.classList.contains('is-active')) switchTab('lobby');
             renderSiteMessages();
         }
 
@@ -2269,6 +2414,7 @@
             renderMessageList(document.getElementById('public-site-messages'), false);
             renderMessageList(document.getElementById('dev-site-messages'), true);
             renderBotAnnouncements();
+            renderCommunityActivity();
             renderCommunitySearch();
         }
 
@@ -2918,13 +3064,15 @@
         }
 
         function switchTab(tabId) {
+            if (tabId === 'luto' && !siteState.mourning) return;
             if (tabId === 'devzone' && !isDevUnlocked) {
                 openDevModal();
                 return;
             }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('is-active'));
             const target = document.getElementById('tab-' + tabId);
-            if(target) target.classList.remove('hidden');
+            if (target) { target.classList.remove('hidden'); target.classList.add('is-active'); }
             if (tabId === 'dashboard') {
                 updateDashboardAccessUI();
                 loadBotConfig();

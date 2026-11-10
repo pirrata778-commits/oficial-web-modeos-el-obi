@@ -57,6 +57,35 @@ html.user-pref-compact main .glass-panel { padding: clamp(.85rem, 2vw, 1.25rem);
 .community-roadmap-card > span { color: #5eead4; font: 700 .58rem 'Orbitron', sans-serif; letter-spacing: .1em; }
 .community-roadmap-card h3 { margin: .55rem 0 .35rem; color: #f3f4f6; font-size: .8rem; font-weight: 700; }
 .community-roadmap-card p { color: #9ca3af; font-size: .7rem; line-height: 1.55; }
+.community-filter { display: grid; min-width: 0; gap: .35rem; color: #9ca3af; font-size: .65rem; }
+.community-filter input,
+.community-filter select { min-width: 0; min-height: 2.55rem; border: 1px solid rgba(255,255,255,.14); border-radius: .75rem; background: rgba(0,0,0,.4); padding: .6rem .75rem; color: #f3f4f6; font-size: .75rem; }
+.community-filter input:focus,
+.community-filter select:focus { border-color: var(--user-accent); outline: 2px solid color-mix(in srgb, var(--user-accent) 25%, transparent); }
+.community-favorites-only { display: flex; align-items: end; justify-content: flex-start; gap: .55rem; min-height: 2.55rem; color: #d1d5db; font-size: .7rem; }
+.community-favorites-only input { width: 1rem; height: 1rem; accent-color: var(--user-accent); }
+.community-bot-card { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: .8rem; border: 1px solid rgba(255,255,255,.1); border-radius: 1rem; background: rgba(0,0,0,.3); padding: 1rem; }
+.community-bot-card-top,
+.community-bot-title { display: flex; min-width: 0; align-items: center; gap: .7rem; }
+.community-bot-card-top { width: 100%; justify-content: space-between; }
+.community-bot-title h3 { overflow-wrap: anywhere; color: #f3f4f6; font-size: .82rem; font-weight: 700; }
+.community-bot-icon { display: grid; width: 2.4rem; height: 2.4rem; flex: 0 0 2.4rem; place-items: center; border: 1px solid color-mix(in srgb, var(--user-accent) 35%, transparent); border-radius: .8rem; background: color-mix(in srgb, var(--user-accent) 10%, transparent); color: var(--user-accent); }
+.community-bot-status { display: inline-flex; align-items: center; gap: .45rem; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: .35rem .6rem; color: #d1d5db; font-size: .65rem; }
+.community-bot-status > span { width: .45rem; height: .45rem; border-radius: 50%; background: #9ca3af; }
+.community-bot-status.is-online { border-color: rgba(52,211,153,.3); color: #a7f3d0; }
+.community-bot-status.is-online > span { background: #34d399; box-shadow: 0 0 10px rgba(52,211,153,.7); }
+.community-bot-status.is-beta { border-color: rgba(251,191,36,.3); color: #fde68a; }
+.community-bot-status.is-beta > span { background: #fbbf24; }
+.community-bot-status.is-maintenance { border-color: rgba(248,113,113,.3); color: #fecaca; }
+.community-bot-status.is-maintenance > span { background: #f87171; }
+.community-bot-meta { color: #9ca3af; font-size: .68rem; line-height: 1.5; }
+.community-activity-list { display: grid; gap: .65rem; }
+.community-activity-item { min-width: 0; border-left: 2px solid rgba(168,85,247,.6); border-radius: 0 .75rem .75rem 0; background: rgba(0,0,0,.25); padding: .8rem 1rem; }
+.community-activity-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+.community-activity-heading time { color: #6b7280; font-size: .62rem; }
+.community-activity-tag { color: #c4b5fd; font-size: .65rem; font-weight: 700; }
+.community-activity-tag.is-bot { color: #a5b4fc; }
+.community-activity-item p { margin-top: .45rem; color: #d1d5db; font-size: .75rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 #maintenance-screen {
     z-index: 1100;
@@ -233,65 +262,38 @@ html.user-pref-compact main .glass-panel { padding: clamp(.85rem, 2vw, 1.25rem);
     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
 }
 
-#dev-modal { z-index: 20001 !important; }
+#dev-modal { z-index: 1200; }
 
 /* Página de luto: escena independiente, con movimiento suave y respeto a reduced-motion. */
-.mourning-screen {
-    z-index: 20000 !important;
-    isolation: isolate;
-    display: none;
-    position: fixed;
-    inset: 0;
+.mourning-page {
+    position: relative;
+    display: grid;
     width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    justify-content: flex-start;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    min-height: min(72vh, 820px);
+    place-items: center;
+    overflow: hidden;
     box-sizing: border-box;
-    padding-top: max(1.5rem, env(safe-area-inset-top));
-    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    padding: clamp(1rem, 4vw, 2.5rem);
+    isolation: isolate;
+    border: 1px solid rgba(226,232,240,.1);
+    border-radius: 1.5rem;
     background: radial-gradient(ellipse at 50% 42%, #202126 0%, #101115 38%, #07080b 76%, #030408 100%);
     color: #f1f1f3;
 }
-#mourning-screen { z-index: 20000 !important; }
-.mourning-screen.is-visible { display: flex !important; }
-body.mourning-active { overflow: hidden; }
-body.mourning-active > :not(#mourning-screen):not(#dev-modal) { visibility: hidden !important; }
-.mourning-screen.is-visible { visibility: visible !important; }
-.mourning-admin-access {
-    position: fixed;
-    z-index: 4;
-    top: max(.75rem, env(safe-area-inset-top));
-    right: max(.75rem, env(safe-area-inset-right));
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    gap: .5rem;
-    border: 1px solid rgba(226,232,240,.25);
-    border-radius: 999px;
-    background: rgba(9,10,13,.92);
-    padding: .65rem 1rem;
-    color: #e5e7eb;
-    font: 700 .68rem 'Orbitron',sans-serif;
-    box-shadow: 0 8px 24px rgba(0,0,0,.45);
-}
-.mourning-admin-access:hover { border-color: rgba(226,232,240,.55); background: #191a1f; }
-.mourning-screen::before,
-.mourning-screen::after {
+.mourning-page::before,
+.mourning-page::after {
     position: absolute;
     inset: -50%;
     z-index: -1;
     content: '';
     pointer-events: none;
 }
-.mourning-screen::before {
+.mourning-page::before {
     inset: 0;
     background: repeating-linear-gradient(115deg, transparent 0 95px, rgba(255,255,255,.025) 96px, transparent 97px 190px);
     animation: mourningRain 26s linear infinite;
 }
-.mourning-screen::after {
+.mourning-page::after {
     inset: 0;
     background: radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,.72) 100%);
 }
@@ -310,7 +312,6 @@ body.mourning-active > :not(#mourning-screen):not(#dev-modal) { visibility: hidd
     animation: mourningArrival 1.2s cubic-bezier(.16,1,.3,1) both, mourningBreath 8s ease-in-out 1.2s infinite alternate;
     flex: 0 0 auto;
     margin: auto;
-    padding-top: clamp(3.25rem, 7vw, 4.5rem);
 }
 @keyframes mourningArrival { from { opacity: 0; transform: translateY(28px) scale(.96); filter: blur(8px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
 @keyframes mourningBreath { to { box-shadow: 0 35px 100px rgba(0,0,0,.68), inset 0 1px rgba(255,255,255,.1), 0 0 75px rgba(148,163,184,.12); } }
@@ -353,14 +354,16 @@ body.mourning-active > :not(#mourning-screen):not(#dev-modal) { visibility: hidd
 .mourning-status { display: inline-flex; align-items: center; gap: .55rem; margin-top: 1.8rem; padding: .5rem .85rem; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; color: #9da0a8; font: 700 .6rem 'Orbitron',sans-serif; letter-spacing: .13em; }
 .mourning-status span { width: 6px; height: 6px; border-radius: 50%; background: #b9bbc1; box-shadow: 0 0 10px rgba(255,255,255,.6); animation: mourningPulse 2.5s ease-in-out infinite; }
 @keyframes mourningPulse { 50% { opacity: .35; transform: scale(.8); } }
+.mourning-return { display: inline-flex; align-items: center; gap: .55rem; margin-top: 1.4rem; border: 1px solid rgba(226,232,240,.2); border-radius: 999px; background: rgba(255,255,255,.04); padding: .7rem 1rem; color: #d1d5db; font-size: .72rem; }
+.mourning-return:hover { border-color: rgba(226,232,240,.45); background: rgba(255,255,255,.1); color: white; }
 @media (max-width: 480px) { .mourning-card { border-radius: 22px; } .mourning-eyebrow { letter-spacing: .13em; font-size: .55rem; } }
 @media (max-width: 480px), (max-height: 620px) {
-    .mourning-screen { align-items: stretch; justify-content: flex-start; padding-top: max(4rem, calc(env(safe-area-inset-top) + 3rem)); padding-right: max(1rem, env(safe-area-inset-right)); padding-left: max(1rem, env(safe-area-inset-left)); }
+    .mourning-page { min-height: 0; padding: 1rem .5rem; }
     .mourning-card { width: 100%; padding-top: 1.5rem; padding-bottom: 1.5rem; }
     .mourning-status { margin-top: 1.1rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .mourning-screen::before, .mourning-card, .mourning-emblem, .mourning-status span { animation: none !important; }
+    .mourning-page::before, .mourning-card, .mourning-emblem, .mourning-status span { animation: none !important; }
 }
 
 .navbar-brand > div:first-child {
